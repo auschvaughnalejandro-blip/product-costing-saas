@@ -32,10 +32,11 @@ export function useAssistant(): AssistantState {
 /** Publish the current page's grounding context to the assistant. */
 export function useSetAssistantContext(context: unknown): void {
   const { setPageContext } = useAssistant();
+  // Depend on a stable serialization of the context rather than the object
+  // identity, so the effect only re-runs when the context's contents change.
   const key = JSON.stringify(context ?? null);
   useEffect(() => {
     setPageContext(context);
     return () => setPageContext(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 }
