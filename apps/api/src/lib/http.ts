@@ -1,7 +1,8 @@
 /** HTTP helpers: a typed application error, async wrapper, and error middleware. */
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { ZodError } from 'zod';
 import type { ApiError } from '@costing/shared';
+import { EngineError } from '../engine/errors';
 import { logger } from './logger';
 
 /** An error with an HTTP status and a stable machine-readable code. */
@@ -27,19 +28,10 @@ export const conflict = (message: string, details?: unknown) =>
   new AppError(409, 'conflict', message, details);
 
 /** Wrap an async route handler so thrown errors reach the error middleware. */
-export function asyncHandler<
-  P = Record<string, string>,
-  ResBody = unknown,
-  ReqBody = unknown,
-  ReqQuery = unknown,
->(
-  fn: (
-    req: Request<P, ResBody, ReqBody, ReqQuery>,
-    res: Response<ResBody>,
-    next: NextFunction,
-  ) => Promise<unknown>,
-) {
-  return (req: Request<P, ResBody, ReqBody, ReqQuery>, res: Response<ResBody>, next: NextFunction) => {
+export function asyncHandler(
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>,
+): RequestHandler {
+  return (req, res, next) => {
     fn(req, res, next).catch(next);
   };
 }
@@ -62,6 +54,18 @@ export function errorHandler(
       error: 'validation_error',
       message: 'Some of the data you sent is invalid.',
       details: err.flatten(),
+    };
+    res.status(400).json(body);
+    return;
+  }
+
+  // Engine errors are bad-input errors, never server faults: surface as 400 with
+  // the engine's plain-language message and stable code.
+  if (err instanceof EngineError) {
+    const body: ApiError = {
+      error: 'engine_error',
+      message: err.message,
+      details: { code: err.code, ...(err.context ? { context: err.context } : {}) },
     };
     res.status(400).json(body);
     return;

@@ -1,9 +1,10 @@
 /** Entry point: start the HTTP server. */
 import { createApp } from './app';
 import { config } from './config';
+import { closeDb, getDb } from './db/pool';
 import { logger } from './lib/logger';
 
-const app = createApp();
+const app = createApp({ db: getDb() });
 
 const server = app.listen(config.port, () => {
   logger.info(`Costing API listening on http://localhost:${config.port} (${config.env})`);
@@ -13,6 +14,8 @@ const server = app.listen(config.port, () => {
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
     logger.info(`Received ${signal}, shutting down...`);
-    server.close(() => process.exit(0));
+    server.close(() => {
+      void closeDb().then(() => process.exit(0));
+    });
   });
 }

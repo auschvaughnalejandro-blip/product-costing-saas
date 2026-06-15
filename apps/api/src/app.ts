@@ -11,8 +11,12 @@ import helmet from 'helmet';
 import type { HealthResponse } from '@costing/shared';
 import { config } from './config';
 import { errorHandler, notFoundHandler } from './lib/http';
+import { authMiddleware } from './middleware/auth';
+import { registerRoutes, type RouteDeps } from './routes';
 
-export function createApp(): Express {
+export type AppDeps = RouteDeps;
+
+export function createApp(deps: AppDeps): Express {
   const app = express();
 
   app.use(helmet());
@@ -24,6 +28,7 @@ export function createApp(): Express {
   );
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
+  app.use(authMiddleware);
 
   // Health check — proves the browser → API wiring end to end.
   app.get('/api/health', (_req, res) => {
@@ -36,9 +41,7 @@ export function createApp(): Express {
     res.json(body);
   });
 
-  // Feature routers are mounted here in later phases (auth, products, versions,
-  // quotations, approvals, assistant, ...).
-  // registerRoutes(app, deps);
+  registerRoutes(app, deps);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
