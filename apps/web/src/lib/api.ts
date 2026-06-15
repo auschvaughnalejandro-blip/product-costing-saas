@@ -163,8 +163,34 @@ export const createVersion = (
     body: JSON.stringify(body),
   }).then((r) => r.version);
 
+export type ApprovalActionName = 'submit' | 'approve' | 'reject';
+
+export interface ApprovalEvent {
+  id: string;
+  action: ApprovalActionName;
+  fromStatus: CostVersionStatus;
+  toStatus: CostVersionStatus;
+  actorId: string | null;
+  actorName: string | null;
+  comment: string | null;
+  createdAt: string;
+}
+
 export const getVersion = (id: string) =>
-  apiFetch<{ version: VersionRecord }>(`/api/versions/${id}`).then((r) => r.version);
+  apiFetch<{ version: VersionRecord; nextActions: ApprovalActionName[] }>(`/api/versions/${id}`);
+
+export const listApprovals = (versionId: string) =>
+  apiFetch<{ events: ApprovalEvent[] }>(`/api/versions/${versionId}/approvals`).then((r) => r.events);
+
+export const transitionVersion = (
+  versionId: string,
+  action: ApprovalActionName,
+  comment?: string,
+) =>
+  apiFetch<{ version: VersionRecord; nextActions: ApprovalActionName[] }>(
+    `/api/versions/${versionId}/transition`,
+    { method: 'POST', body: JSON.stringify({ action, comment }) },
+  );
 
 export const listMaterials = () =>
   apiFetch<{ materials: Material[] }>('/api/materials').then((r) => r.materials);

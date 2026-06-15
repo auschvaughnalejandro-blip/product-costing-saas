@@ -136,6 +136,36 @@ describe('API integration', () => {
     expect(get.body.version.result.total.total).toBe('108.00'); // traces back to the costing
   });
 
+  it('moves a version through the approval workflow', async () => {
+    const submit = await agent
+      .post(`/api/versions/${versionId}/transition`)
+      .send({ action: 'submit' })
+      .expect(200);
+    expect(submit.body.version.status).toBe('submitted');
+    expect(submit.body.nextActions).toEqual(expect.arrayContaining(['approve', 'reject']));
+
+    const approve = await agent
+      .post(`/api/versions/${versionId}/transition`)
+      .send({ action: 'approve', comment: 'Looks good' })
+      .expect(200);
+    expect(approve.body.version.status).toBe('approved');
+    expect(approve.body.nextActions).toEqual([]);
+  });
+
+  it('refuses an invalid transition', async () => {
+    const res = await agent
+      .post(`/api/versions/${versionId}/transition`)
+      .send({ action: 'approve' })
+      .expect(400);
+    expect(res.body.message).toMatch(/can't approve/i);
+  });
+
+  it('records the approval history (who did what)', async () => {
+    const res = await agent.get(`/api/versions/${versionId}/approvals`).expect(200);
+    expect(res.body.events.map((e: { action: string }) => e.action)).toEqual(['submit', 'approve']);
+    expect(res.body.events[1].toStatus).toBe('approved');
+  });
+
   it('forbids a viewer-only check on protected role routes when logged out', async () => {
     await request(app)
       .post('/api/products/recalculate')

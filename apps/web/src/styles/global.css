@@ -476,9 +476,51 @@ code {
 }
 
 /* ── Summary panel ───────────────────────────────────────────── */
+.side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 80px;
+}
 .summary {
   position: sticky;
   top: 80px;
+}
+.side-col .summary {
+  position: static;
+}
+
+/* Approval workflow */
+.approval-comment {
+  width: 100%;
+  margin-bottom: 8px;
+  resize: vertical;
+}
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.timeline {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  font-size: 13px;
+}
+.timeline li {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--color-border);
+}
+.timeline-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-top: 5px;
 }
 .summary-title {
   margin: 0 0 12px;
