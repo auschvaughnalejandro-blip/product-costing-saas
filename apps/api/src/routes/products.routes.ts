@@ -95,8 +95,12 @@ export function productsRouter(db: Database): Router {
     asyncHandler(async (req, res) => {
       const user = currentUser(req);
       const body = CreateVersionSchema.parse(req.body);
-      const input = body.input ?? (await loadCostInput(db, user.tenantId, req.params.id));
-      if (!input) throw notFound('Product not found.');
+      // Always confirm the product belongs to this tenant — even when an edited
+      // input is supplied — so a version can never reference another tenant's
+      // product. The stored snapshot is still the caller's input.
+      const owned = await loadCostInput(db, user.tenantId, req.params.id);
+      if (!owned) throw notFound('Product not found.');
+      const input = body.input ?? owned;
       const result = computeCost(input);
       const version = await createCostVersion(db, user.tenantId, user.id, {
         productId: req.params.id,

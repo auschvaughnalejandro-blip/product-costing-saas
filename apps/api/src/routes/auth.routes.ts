@@ -6,7 +6,13 @@ import { signToken } from '../lib/jwt';
 import { verifyPassword } from '../lib/password';
 import { AUTH_COOKIE, authCookieOptions, currentUser, requireAuth } from '../middleware/auth';
 import { ensureDefaultTenant, getDefaultTenant } from '../modules/tenants/tenants.repo';
-import { countUsers, createUser, getUserByEmail, getUserById, type UserRole } from '../modules/users/users.repo';
+import {
+  countUsers,
+  createUser,
+  getUserByEmail,
+  getUserById,
+  type UserRole,
+} from '../modules/users/users.repo';
 import type { Response } from 'express';
 
 const LoginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
@@ -78,7 +84,8 @@ export function authRouter(db: Database): Router {
     '/me',
     requireAuth,
     asyncHandler(async (req, res) => {
-      const user = await getUserById(db, currentUser(req).id);
+      const u = currentUser(req);
+      const user = await getUserById(db, u.tenantId, u.id);
       if (!user) throw unauthorized();
       res.json({ user });
     }),

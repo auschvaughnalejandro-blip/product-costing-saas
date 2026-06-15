@@ -62,8 +62,15 @@ export async function getUserByEmail(
   return row ? { ...toUser(row), passwordHash: row.password_hash } : null;
 }
 
-export async function getUserById(db: Queryable, id: string): Promise<User | null> {
-  const { rows } = await db.query<UserRow>('SELECT * FROM users WHERE id = $1', [id]);
+export async function getUserById(
+  db: Queryable,
+  tenantId: string,
+  id: string,
+): Promise<User | null> {
+  const { rows } = await db.query<UserRow>('SELECT * FROM users WHERE tenant_id = $1 AND id = $2', [
+    tenantId,
+    id,
+  ]);
   return rows[0] ? toUser(rows[0]) : null;
 }
 
