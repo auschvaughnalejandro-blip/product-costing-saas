@@ -591,3 +591,83 @@ code {
 .problems-table th {
   background: #fef3c7;
 }
+
+/* ── Editing & recalculation ─────────────────────────────────── */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-sm);
+  font-size: 13px;
+}
+.action-bar-right {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.edit-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.rates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.rate-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.rate-field > span {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: 12px;
+}
+.rate-field input,
+.rate-field select {
+  padding: 6px 8px;
+}
+.cell-input {
+  width: 88px;
+  padding: 4px 6px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+}
+.cell-input:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+.cell-input:focus {
+  border-color: var(--color-primary);
+  background: #fff;
+  outline: none;
+}
+.cell-input.is-changed {
+  background: var(--color-warning-soft);
+  border-color: #fde68a;
+}
+.rates-panel.is-changed {
+  box-shadow: 0 0 0 1px #fde68a;
+}
+.dot-changed {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-warning);
+  margin-left: 6px;
+  vertical-align: middle;
+}

@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import * as api from '../lib/api';
-import { CostTree } from '../components/CostTree';
-import { SummaryPanel } from '../components/SummaryPanel';
+import { EditableCostView } from '../components/EditableCostView';
 
 export function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -42,16 +41,11 @@ export function ProductPage() {
       <div className="page-header">
         <div>
           <h1>{result.tree.name}</h1>
-          <p className="muted">Full cost breakdown · {result.currency}</p>
+          <p className="muted">Editable cost breakdown · {result.currency}</p>
         </div>
       </div>
 
-      <div className="cost-layout">
-        <div className="card no-pad cost-main">
-          <CostTree tree={result.tree} currency={result.currency} />
-        </div>
-        <SummaryPanel result={result} />
-      </div>
+      <EditableCostView initialInput={data.input} initialResult={result} />
     </div>
   );
 }
