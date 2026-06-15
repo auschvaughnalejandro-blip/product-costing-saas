@@ -1,5 +1,6 @@
 import type { Express } from 'express';
 import type { Database } from '../db/pool';
+import { assistantRouter } from './assistant.routes';
 import { authRouter } from './auth.routes';
 import { materialsRouter } from './materials.routes';
 import { productsRouter } from './products.routes';
@@ -20,4 +21,5 @@ export function registerRoutes(app: Express, deps: RouteDeps): void {
   app.use('/api/versions', versionsRouter(db));
   app.use('/api/quotations', quotationsRouter(db));
   app.use('/api/uploads', uploadsRouter(db));
+  app.use('/api/assistant', assistantRouter());
 }

@@ -239,6 +239,38 @@ export const createQuotation = (body: CreateQuotationBody) =>
     body: JSON.stringify(body),
   }).then((r) => r.quotation);
 
+// ── AI assistant ──────────────────────────────────────────────────────────────
+
+export interface AssistantStatus {
+  enabled: boolean;
+  provider: string;
+}
+export interface ExplainResult {
+  answer: string;
+  grounded: boolean;
+  provider: string;
+}
+export interface FixSuggestion {
+  enabled: boolean;
+  summary: string;
+  filename?: string;
+  fileBase64?: string;
+}
+
+export const assistantStatus = () => apiFetch<AssistantStatus>('/api/assistant/status');
+
+export const assistantExplain = (question: string, context: unknown) =>
+  apiFetch<ExplainResult>('/api/assistant/explain', {
+    method: 'POST',
+    body: JSON.stringify({ question, context }),
+  });
+
+export const assistantSuggestFix = (errors: ValidationProblem[]) =>
+  apiFetch<FixSuggestion>('/api/assistant/suggest-fix', {
+    method: 'POST',
+    body: JSON.stringify({ errors }),
+  });
+
 export const templateUrl = `${API_URL}/api/uploads/template`;
 
 export async function uploadExcel(file: File, opts?: { dryRun?: boolean }): Promise<UploadResult> {

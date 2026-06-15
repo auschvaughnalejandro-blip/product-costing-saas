@@ -7,6 +7,7 @@ import { SummaryPanel } from '../components/SummaryPanel';
 import { ApprovalPanel } from '../components/ApprovalPanel';
 import { QuotationDialog } from '../components/QuotationDialog';
 import { KindBadge, StatusBadge } from '../components/badges';
+import { useSetAssistantContext } from '../lib/assistant';
 import { formatDateTime } from '../lib/format';
 
 export function VersionPage() {
@@ -17,6 +18,17 @@ export function VersionPage() {
     queryFn: () => api.getVersion(versionId!),
     enabled: Boolean(versionId),
   });
+
+  useSetAssistantContext(
+    data
+      ? {
+          version: data.version.name,
+          status: data.version.status,
+          total: data.version.result.total,
+          currency: data.version.result.currency,
+        }
+      : null,
+  );
 
   if (isLoading) {
     return (

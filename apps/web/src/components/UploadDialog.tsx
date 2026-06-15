@@ -11,6 +11,24 @@ export function UploadDialog({ onClose }: { onClose: () => void }) {
   const [errors, setErrors] = useState<ValidationProblem[] | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fix, setFix] = useState<api.FixSuggestion | null>(null);
+  const [fixBusy, setFixBusy] = useState(false);
+
+  const suggestFix = async () => {
+    if (!errors) return;
+    setFixBusy(true);
+    setFix(null);
+    try {
+      setFix(await api.assistantSuggestFix(errors));
+    } catch (err) {
+      setFix({
+        enabled: false,
+        summary: err instanceof api.ApiClientError ? err.message : 'Could not get a suggestion.',
+      });
+    } finally {
+      setFixBusy(false);
+    }
+  };
 
   const submit = async () => {
     if (!file) return;
@@ -55,6 +73,7 @@ export function UploadDialog({ onClose }: { onClose: () => void }) {
             setFile(e.target.files?.[0] ?? null);
             setErrors(null);
             setMessage(null);
+            setFix(null);
           }}
         />
 
@@ -83,6 +102,29 @@ export function UploadDialog({ onClose }: { onClose: () => void }) {
                 ))}
               </tbody>
             </table>
+            <div style={{ marginTop: 10 }}>
+              <button className="btn btn-sm" onClick={suggestFix} disabled={fixBusy}>
+                {fixBusy ? 'Asking the assistant…' : '✦ Suggest a fix with AI'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {fix && (
+          <div className="assistant-fix">
+            <p style={{ marginTop: 0 }}>{fix.summary}</p>
+            {fix.fileBase64 && (
+              <p>
+                <a
+                  className="btn btn-primary btn-sm"
+                  download={fix.filename ?? 'corrected.xlsx'}
+                  href={`data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${fix.fileBase64}`}
+                >
+                  Download corrected file
+                </a>{' '}
+                <span className="muted">— review it, then re-upload above to apply.</span>
+              </p>
+            )}
           </div>
         )}
 

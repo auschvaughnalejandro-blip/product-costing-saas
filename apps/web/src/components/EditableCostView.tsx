@@ -3,6 +3,7 @@ import type { CostInput, CostResult, OverheadRule } from '@costing/shared';
 import * as api from '../lib/api';
 import { formatMoney } from '../lib/format';
 import { useDebouncedCallback } from '../lib/useDebouncedCallback';
+import { useSetAssistantContext } from '../lib/assistant';
 import { changedQuantities, findBomNode, indexCostNodes } from '../lib/tree';
 import { EditableCostTree } from './EditableCostTree';
 import { RatesPanel } from './RatesPanel';
@@ -95,6 +96,15 @@ export function EditableCostView({ initialInput, initialResult, renderActions }:
   }, [input, initialInput]);
 
   const currency = result.currency;
+
+  // Ground the assistant in the live (possibly edited) figures.
+  useSetAssistantContext({
+    product: result.tree.name,
+    currency,
+    total: result.total,
+    overhead: result.meta.overhead,
+    edited: dirty,
+  });
 
   return (
     <>
