@@ -19,6 +19,7 @@ Cost figures are produced by a deterministic calculation engine — the same inp
 - [Running with Docker](#running-with-docker)
 - [Data sources: Excel and SAP](#data-sources-excel-and-sap)
 - [A note on master data](#a-note-on-master-data)
+- [Documentation](#documentation)
 - [Roadmap](#roadmap)
 - [Deliverables](#deliverables)
 
@@ -66,7 +67,7 @@ Because the calculation is deterministic, results are accurate and repeatable �
 | Layer | Technology | Why |
 | --- | --- | --- |
 | Frontend | React (Vite) | Modern web app; no mobile or public-SEO requirement |
-| Cost tables | AG Grid / TanStack Table | Built for editable, multi-level data grids |
+| Cost tables | TanStack Table | Headless, fully-typed tree/table; lets us own styling and keep formatting in one place |
 | Backend | Node.js | Application logic, accounts, core services |
 | Costing engine | Node.js | Deterministic calculation engine |
 | Database | PostgreSQL | Reliable structured storage; SaaS standard |
@@ -112,66 +113,94 @@ The key design rule: the **costing engine is a pure module** — it takes data i
 ## Project structure
 
 ```
-product-costing-saas/
+Ebita.ai/
 ├── apps/
-│   ├── web/                  # React (Vite) frontend
+│   ├── web/                   # React (Vite) frontend
 │   │   ├── src/
-│   │   │   ├── components/    # Grid, tree, panels
-│   │   │   ├── features/      # costing, quotation, approvals, assistant
-│   │   │   ├── lib/           # api client, formatting
+│   │   │   ├── components/     # grid, tree, panels, dialogs
+│   │   │   ├── pages/          # products, product, versions, quotations, login
+│   │   │   ├── lib/            # api client, formatting, assistant context
 │   │   │   └── main.tsx
+│   │   ├── nginx.conf          # serves the SPA, proxies /api in Docker
+│   │   ├── Dockerfile
 │   │   └── vite.config.ts
-│   └── api/                  # Node.js backend
+│   └── api/                   # Node.js backend
 │       ├── src/
-│       │   ├── engine/        # costing engine (pure, no I/O)
-│       │   ├── ingestion/     # excel parsing + validation
-│       │   ├── integrations/  # sap connector, ai adapter
-│       │   ├── modules/       # products, versions, quotations, approvals
-│       │   ├── db/            # migrations, queries
+│       │   ├── engine/         # costing engine (pure, no I/O)
+│       │   ├── ingestion/      # excel parse → validate → map
+│       │   ├── integrations/   # sap/ connector, ai/ adapter
+│       │   ├── modules/        # products, versions, quotations, approvals, users, tenants
+│       │   ├── routes/         # REST endpoints (coordinators only)
+│       │   ├── db/             # migrations, pool, migrate runner
 │       │   └── server.ts
+│       ├── Dockerfile
 │       └── package.json
 ├── packages/
-│   └── shared/               # types shared between web and api
-├── docker-compose.yml
-├── Dockerfile.web
-├── Dockerfile.api
+│   └── shared/                # types shared between web and api
+├── docs/                      # EXCEL_FORMAT, SAP_INTEGRATION, DEPLOYMENT, MULTI_TENANCY, USAGE
+├── docker-compose.yml         # db + api + web
 └── README.md
 ```
 
-> The exact folder names are a suggestion; the important separation is **engine vs. application vs. interface**.
+> The important separation is **engine vs. application vs. interface**: all cost
+> figures originate in `apps/api/src/engine`, a pure module with no I/O.
 
 ## Getting started
 
 ### Prerequisites
 
 - Node.js 20+ and npm
-- Docker and Docker Compose
-- A PostgreSQL instance (or use the one in `docker-compose.yml`)
-- A Google Gemini API key
+- For a real database: PostgreSQL (or use the one in `docker-compose.yml`)
+- *Optional:* a Google Gemini API key (the AI assistant). The app runs fully
+  without it.
 
-### Install and run (local development)
+### Quick start (zero setup)
+
+You can run the whole app against an in-process database — no Docker, no Postgres:
 
 ```bash
-# 1. Clone and install
-git clone <repo-url>
-cd product-costing-saas
+npm install
+cp .env.example .env          # then set: DATABASE_URL=pglite
+npm run dev
+```
+
+`DATABASE_URL=pglite` boots an in-memory database that migrates itself; use
+`pglite:./.pgdata` to persist it to disk. Great for a quick try; use a real
+PostgreSQL URL for anything real.
+
+### Local development (with PostgreSQL)
+
+```bash
+# 1. Install dependencies
 npm install
 
 # 2. Start the database
 docker compose up -d db
 
 # 3. Configure environment
-cp .env.example .env
-# edit .env and fill in the values
+cp .env.example .env          # edit values as needed
 
 # 4. Run database migrations
 npm run db:migrate
 
-# 5. Start backend and frontend
+# 5. Start backend and frontend together
 npm run dev
 ```
 
-The frontend runs on `http://localhost:5173` and the API on `http://localhost:3000` by default.
+The frontend runs on `http://localhost:5173` and the API on
+`http://localhost:3000`. Register the first user in the app — they become the
+admin. See `docs/USAGE.md` for a full walkthrough.
+
+### Useful scripts (run from the repo root)
+
+```bash
+npm run dev          # api + web in watch mode
+npm test             # engine + ingestion + API integration tests (in-memory DB)
+npm run typecheck    # type-check shared, api and web
+npm run lint         # eslint across the repo
+npm run db:migrate   # apply pending migrations
+npm run db:seed      # seed demo data
+```
 
 ## Environment variables
 
@@ -205,14 +234,22 @@ The app runs fully without the SAP values — leave them blank until the client 
 docker compose up --build
 ```
 
-The same images run in the cloud; only the environment variables and the database connection change. The detailed cloud configuration is finalised in a technical planning session.
+Then open **http://localhost:8080**. The web container serves the built SPA and
+reverse-proxies `/api` to the API container, so the browser talks to a single
+origin. The API migrates the database automatically on boot (`MIGRATE_ON_START`),
+so there's no separate migration step.
+
+The **same images run in the cloud** — only environment variables and the
+database connection change. Full local and cloud instructions (HTTPS,
+`NODE_ENV=production`, secrets, health checks, building/pushing images) are in
+**[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)**.
 
 ## Data sources: Excel and SAP
 
 The app has two ways to get product and rate data in:
 
 - **Excel** — the primary input. Upload a spreadsheet in the expected format. If the file doesn't match the format, the AI assistant suggests a corrected version for the user to **approve before it is used**.
-- **SAP S/4HANA** — a direct connection that pulls cost data from the client's SAP system, added on top of Excel. It depends on the client providing a test system, credentials, network access, and IT/security sign-off, so it is scheduled toward the end. **Every other feature works on Excel alone**, so any delay in SAP access does not hold up the rest of the platform.
+- **SAP S/4HANA** — a direct connection that pulls cost data from the client's SAP system, added on top of Excel. The connector is **built and ships disabled**: it activates only when SAP credentials are set (`SAP_BASE_URL`, `SAP_USERNAME`, …), and degrades gracefully if SAP is unreachable. **Every other feature works on Excel alone**, so any delay in SAP access does not hold up the rest of the platform. See [`docs/SAP_INTEGRATION.md`](docs/SAP_INTEGRATION.md).
 
 ## A note on master data
 
@@ -223,11 +260,21 @@ Material prices, labour rates, and machine rates are **master data** — negotia
 
 The AI assistant's role is to **explain** these numbers, not to source or invent them.
 
+## Documentation
+
+| Doc | What it covers |
+| --- | --- |
+| [`docs/USAGE.md`](docs/USAGE.md) | End-to-end walkthrough for users (sign-in, upload/import, edit, version, quote, approve). |
+| [`docs/EXCEL_FORMAT.md`](docs/EXCEL_FORMAT.md) | The one accepted spreadsheet format, sheet by sheet. |
+| [`docs/SAP_INTEGRATION.md`](docs/SAP_INTEGRATION.md) | The SAP S/4HANA connector: config, payload shape, pipeline, API. |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Running with Docker locally and deploying to the cloud. |
+| [`docs/MULTI_TENANCY.md`](docs/MULTI_TENANCY.md) | The tenant-aware foundations and how isolation is verified. |
+
 ## Roadmap
 
 Planned for later phases, after the first customer is live and validated:
 
-- **Multi-customer (multi-tenant) capabilities** — separate sign-ups, data separation between customers, per-customer settings, and billing.
+- **Multi-customer (multi-tenant) capabilities** — separate sign-ups, per-customer settings, and billing. The **groundwork is already in place** (every table and query is tenant-scoped — see [`docs/MULTI_TENANCY.md`](docs/MULTI_TENANCY.md)), so this is an extension rather than a rewrite.
 - **Should-cost estimation** — suggesting what a product *should* cost.
 - **Anomaly detection** — automatically flagging unusual or out-of-line costs.
 
