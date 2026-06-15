@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import * as api from '../lib/api';
 import { CostTree } from '../components/CostTree';
 import { SummaryPanel } from '../components/SummaryPanel';
+import { QuotationDialog } from '../components/QuotationDialog';
 import { KindBadge, StatusBadge } from '../components/badges';
 import { formatDateTime } from '../lib/format';
 
 export function VersionPage() {
   const { id, versionId } = useParams<{ id: string; versionId: string }>();
+  const [showQuote, setShowQuote] = useState(false);
   const { data: version, isLoading, isError, error } = useQuery({
     queryKey: ['version', versionId],
     queryFn: () => api.getVersion(versionId!),
@@ -49,7 +52,19 @@ export function VersionPage() {
             Version {version.versionNo} · immutable snapshot · saved {formatDateTime(version.createdAt)}
           </p>
         </div>
+        <button className="btn btn-primary" onClick={() => setShowQuote(true)}>
+          Create quotation
+        </button>
       </div>
+
+      {showQuote && (
+        <QuotationDialog
+          versionId={version.id}
+          costTotal={version.totalCost}
+          currency={version.currency}
+          onClose={() => setShowQuote(false)}
+        />
+      )}
 
       <div className="cost-layout">
         <div className="card no-pad cost-main">

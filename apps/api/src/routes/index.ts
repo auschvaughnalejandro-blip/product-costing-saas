@@ -3,6 +3,7 @@ import type { Database } from '../db/pool';
 import { authRouter } from './auth.routes';
 import { materialsRouter } from './materials.routes';
 import { productsRouter } from './products.routes';
+import { quotationsRouter } from './quotations.routes';
 import { uploadsRouter } from './uploads.routes';
 import { versionsRouter } from './versions.routes';
 
@@ -17,5 +18,6 @@ export function registerRoutes(app: Express, deps: RouteDeps): void {
   app.use('/api/materials', materialsRouter(db));
   app.use('/api/products', productsRouter(db));
   app.use('/api/versions', versionsRouter(db));
+  app.use('/api/quotations', quotationsRouter(db));
   app.use('/api/uploads', uploadsRouter(db));
 }

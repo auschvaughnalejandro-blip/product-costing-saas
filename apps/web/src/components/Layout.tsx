@@ -21,6 +21,7 @@ export function Layout() {
           <NavLink to="/" end>
             Products
           </NavLink>
+          <NavLink to="/quotations">Quotations</NavLink>
         </nav>
         <div className="topbar-right">
           {user && (

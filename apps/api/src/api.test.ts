@@ -10,6 +10,7 @@ describe('API integration', () => {
   let app: Express;
   let agent: ReturnType<typeof request.agent>;
   let productId = '';
+  let versionId = '';
 
   beforeAll(async () => {
     h = await createTestDb();
@@ -101,12 +102,38 @@ describe('API integration', () => {
       .send({ name: 'v1', kind: 'draft' })
       .expect(201);
     expect(create.body.version.totalCost).toBe('108.00');
+    versionId = create.body.version.id;
 
     const list = await agent.get(`/api/products/${productId}/versions`).expect(200);
     expect(list.body.versions.length).toBe(1);
 
-    const get = await agent.get(`/api/versions/${create.body.version.id}`).expect(200);
+    const get = await agent.get(`/api/versions/${versionId}`).expect(200);
     expect(get.body.version.result.total.total).toBe('108.00');
+  });
+
+  it('creates a quotation from a version (price = cost + margin)', async () => {
+    const res = await agent
+      .post('/api/quotations')
+      .send({
+        costVersionId: versionId,
+        customerName: 'Acme Corp',
+        marginType: 'percent',
+        marginValue: 25,
+        terms: 'Net 30',
+      })
+      .expect(201);
+    expect(res.body.quotation.costTotal).toBe('108.00');
+    expect(res.body.quotation.priceTotal).toBe('135.00'); // 108 + 25%
+    expect(res.body.quotation.number).toMatch(/^Q-\d{4}$/);
+  });
+
+  it('lists and fetches the quotation with its source version', async () => {
+    const list = await agent.get('/api/quotations').expect(200);
+    expect(list.body.quotations.length).toBe(1);
+    const id = list.body.quotations[0].id;
+    const get = await agent.get(`/api/quotations/${id}`).expect(200);
+    expect(get.body.quotation.customerName).toBe('Acme Corp');
+    expect(get.body.version.result.total.total).toBe('108.00'); // traces back to the costing
   });
 
   it('forbids a viewer-only check on protected role routes when logged out', async () => {

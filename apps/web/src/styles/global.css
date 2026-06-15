@@ -685,3 +685,83 @@ h1 .badge {
   vertical-align: middle;
   margin-left: 6px;
 }
+
+/* ── Quotation ───────────────────────────────────────────────── */
+.price-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+  margin-top: 8px;
+}
+.price-preview strong {
+  font-size: 20px;
+  color: var(--color-primary);
+}
+.quote-doc {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px;
+}
+.quote-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid var(--color-text);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.quote-parties {
+  margin-bottom: 20px;
+}
+.quote-lines {
+  margin-bottom: 16px;
+}
+.quote-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 16px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+}
+.quote-total strong {
+  font-size: 22px;
+}
+.quote-block {
+  margin-top: 16px;
+  font-size: 13px;
+}
+.quote-foot {
+  margin-top: 24px;
+  font-size: 12px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+}
+
+/* ── Print ───────────────────────────────────────────────────── */
+@media print {
+  .topbar,
+  .no-print,
+  .action-bar,
+  .breadcrumb {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .content {
+    max-width: none;
+    padding: 0;
+  }
+  .card {
+    box-shadow: none;
+    border: none;
+  }
+  .quote-doc {
+    padding: 0;
+  }
+}

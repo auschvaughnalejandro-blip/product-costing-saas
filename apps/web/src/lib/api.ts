@@ -169,6 +169,50 @@ export const getVersion = (id: string) =>
 export const listMaterials = () =>
   apiFetch<{ materials: Material[] }>('/api/materials').then((r) => r.materials);
 
+// ── quotations ──────────────────────────────────────────────────────────────
+
+export type MarginType = 'percent' | 'amount';
+export interface Quotation {
+  id: string;
+  number: string;
+  costVersionId: string;
+  customerName: string;
+  customerContact: string | null;
+  customerAddress: string | null;
+  currency: string;
+  marginType: MarginType;
+  marginValue: string;
+  costTotal: string;
+  priceTotal: string;
+  terms: string | null;
+  notes: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface CreateQuotationBody {
+  costVersionId: string;
+  customerName: string;
+  customerContact?: string;
+  customerAddress?: string;
+  marginType: MarginType;
+  marginValue: number | string;
+  terms?: string;
+  notes?: string;
+}
+
+export const listQuotations = () =>
+  apiFetch<{ quotations: Quotation[] }>('/api/quotations').then((r) => r.quotations);
+
+export const getQuotation = (id: string) =>
+  apiFetch<{ quotation: Quotation; version: VersionRecord | null }>(`/api/quotations/${id}`);
+
+export const createQuotation = (body: CreateQuotationBody) =>
+  apiFetch<{ quotation: Quotation }>('/api/quotations', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }).then((r) => r.quotation);
+
 export const templateUrl = `${API_URL}/api/uploads/template`;
 
 export async function uploadExcel(file: File, opts?: { dryRun?: boolean }): Promise<UploadResult> {
