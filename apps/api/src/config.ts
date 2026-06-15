@@ -35,12 +35,14 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   WEB_ORIGIN: z.string().default('http://localhost:5173'),
 
-  DATABASE_URL: z
-    .string()
-    .default('postgresql://costing:costing@localhost:5432/costing'),
+  DATABASE_URL: z.string().default('postgresql://costing:costing@localhost:5432/costing'),
 
   JWT_SECRET: z.string().min(1).default('dev-only-change-me-to-a-long-random-string'),
   JWT_EXPIRES_IN: z.string().default('7d'),
+
+  // When 'true', run pending migrations against the configured database on boot.
+  // Used by the Docker image so `docker compose up` is self-contained.
+  MIGRATE_ON_START: z.string().default('false'),
 
   AI_PROVIDER: z.enum(['gemini', 'none']).default('gemini'),
   GEMINI_API_KEY: z.string().default(''),
@@ -67,7 +69,9 @@ export const config = {
   isTest: env.NODE_ENV === 'test',
   port: env.PORT,
   /** Allowed browser origins (comma-separated in WEB_ORIGIN). */
-  webOrigins: env.WEB_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean),
+  webOrigins: env.WEB_ORIGIN.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
   db: {
     url: env.DATABASE_URL,
   },
@@ -75,6 +79,8 @@ export const config = {
     jwtSecret: env.JWT_SECRET,
     jwtExpiresIn: env.JWT_EXPIRES_IN,
   },
+  /** Run database migrations automatically when the server starts. */
+  migrateOnStart: env.MIGRATE_ON_START === 'true',
   ai: {
     provider: env.AI_PROVIDER,
     geminiApiKey: env.GEMINI_API_KEY,

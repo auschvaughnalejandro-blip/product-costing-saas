@@ -1,0 +1,15 @@
+# Keep the build context small and never copy host build artifacts into images —
+# they are rebuilt inside the Dockerfiles.
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.vite
+.git
+.gitignore
+**/*.log
+.env
+.env.*
+!.env.example
+*.md
+!README.md

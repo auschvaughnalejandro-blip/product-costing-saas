@@ -8,11 +8,19 @@ import { logger } from './lib/logger';
 async function main(): Promise<void> {
   const { db, close } = await createDatabase();
 
-  // The in-process PGlite demo database is empty on boot, so migrate it
-  // automatically. A real Postgres is migrated explicitly via `npm run db:migrate`.
+  // The in-process PGlite demo database is empty on boot, so always migrate it.
+  // A real Postgres is normally migrated explicitly via `npm run db:migrate`, but
+  // set MIGRATE_ON_START=true (the Docker image does) for a self-contained boot.
   if (usingPglite()) {
     await runMigrations(db);
     logger.info('Using in-process PGlite database (zero-setup demo mode).');
+  } else if (config.migrateOnStart) {
+    const applied = await runMigrations(db);
+    logger.info(
+      applied.length
+        ? `Applied ${applied.length} migration(s) on start.`
+        : 'Database already up to date.',
+    );
   }
 
   const app = createApp({ db });

@@ -1,7 +1,10 @@
-# Local development stack.
-# Phase 0: the PostgreSQL database (used by `npm run dev`).
-# Phase 12 adds the `api` and `web` services so `docker compose up`
-# runs the whole application. See DEPLOYMENT.md.
+# The whole application: database + API + web, built from the same images that
+# deploy to the cloud. Only environment variables change between environments.
+#
+#   docker compose up --build      # build and run everything
+#   open http://localhost:8080     # the app (web → /api proxied to the API)
+#
+# See docs/DEPLOYMENT.md for cloud notes (HTTPS, NODE_ENV=production, secrets).
 
 services:
   db:
@@ -21,6 +24,50 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: costing-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Local default is `development` so auth cookies work over http://localhost.
+      # In the cloud (behind HTTPS) set NODE_ENV=production for secure cookies.
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-costing}:${POSTGRES_PASSWORD:-costing}@db:5432/${POSTGRES_DB:-costing}
+      # Migrate the database automatically on boot so `up` is self-contained.
+      MIGRATE_ON_START: 'true'
+      # CHANGE THIS in any real deployment.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-to-a-long-random-string}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      SAP_BASE_URL: ${SAP_BASE_URL:-}
+      SAP_CLIENT: ${SAP_CLIENT:-}
+      SAP_USERNAME: ${SAP_USERNAME:-}
+      SAP_PASSWORD: ${SAP_PASSWORD:-}
+    ports:
+      - '3000:3000'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Blank → the browser uses relative /api, which nginx proxies to `api`.
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: costing-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '8080:80'
 
 volumes:
   costing-db-data:
