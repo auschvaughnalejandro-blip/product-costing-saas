@@ -9,14 +9,14 @@ import { countUsers, createUser, getUserByEmail } from '../modules/users/users.r
 import { upsertMaterial } from '../modules/materials/materials.repo';
 import { saveProduct } from '../modules/products/products.repo';
 import { createCostVersion, listCostVersions } from '../modules/versions/versions.repo';
-import { closeDb, getDb } from './pool';
+import { createDatabase, type Database } from './pool';
+import { runMigrations } from './migrate';
 import { logger } from '../lib/logger';
 
 const DEMO_EMAIL = 'admin@demo.test';
 const DEMO_PASSWORD = 'password123';
 
-async function seed(): Promise<void> {
-  const db = getDb();
+async function seed(db: Database): Promise<void> {
 
   const tenant = await ensureDefaultTenant(db, 'Demo Manufacturing Co.');
   logger.info(`Tenant: ${tenant.name} (${tenant.id})`);
@@ -80,10 +80,14 @@ async function seed(): Promise<void> {
   logger.info('Seed complete.');
 }
 
-seed()
-  .then(() => closeDb())
+createDatabase()
+  .then(async ({ db, close }) => {
+    await runMigrations(db); // ensure schema exists, then seed
+    await seed(db);
+    await close();
+  })
   .then(() => process.exit(0))
   .catch((err) => {
     logger.error('Seed failed', err);
-    closeDb().finally(() => process.exit(1));
+    process.exit(1);
   });

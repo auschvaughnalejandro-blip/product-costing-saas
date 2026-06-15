@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Queryable } from './pool';
-import { closeDb, getDb } from './pool';
+import { createDatabase } from './pool';
 import { logger } from '../lib/logger';
 
 const migrationsDir = fileURLToPath(new URL('./migrations', import.meta.url));
@@ -86,12 +86,13 @@ export async function runMigrations(
 
 // Run as a script.
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  runMigrations(getDb())
-    .then((applied) => {
+  createDatabase()
+    .then(async ({ db, close }) => {
+      const applied = await runMigrations(db);
       logger.info(
         applied.length ? `Migrations complete (${applied.length} applied).` : 'No pending migrations.',
       );
-      return closeDb();
+      await close();
     })
     .then(() => process.exit(0))
     .catch((err) => {

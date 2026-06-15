@@ -1,7 +1,10 @@
 /**
  * Database access. A tiny abstraction (`Database`) so the same repository code
- * runs against a real PostgreSQL pool in production and an in-process Postgres
- * (PGlite) in tests — they share identical SQL.
+ * runs against:
+ *   - a real PostgreSQL pool in production, and
+ *   - an in-process Postgres (PGlite) for tests and zero-setup local demos
+ *     (set DATABASE_URL=pglite, or pglite:./path to persist to disk).
+ * They share identical SQL.
  */
 import pg from 'pg';
 import { config } from '../config';
@@ -19,6 +22,11 @@ export interface Queryable {
 /** A database that can also run a unit of work in a transaction. */
 export interface Database extends Queryable {
   transaction<T>(fn: (tx: Queryable) => Promise<T>): Promise<T>;
+}
+
+export interface DatabaseHandle {
+  db: Database;
+  close: () => Promise<void>;
 }
 
 class PgDatabase implements Database {
@@ -51,20 +59,17 @@ class PgDatabase implements Database {
   }
 }
 
-let instance: { db: Database; pool: pg.Pool } | null = null;
-
-/** The shared application database (lazy singleton). */
-export function getDb(): Database {
-  if (!instance) {
-    const pool = new Pool({ connectionString: config.db.url, max: 10 });
-    instance = { db: new PgDatabase(pool), pool };
-  }
-  return instance.db;
+/** True when configured to use the in-process PGlite database. */
+export function usingPglite(): boolean {
+  return config.db.url === 'pglite' || config.db.url.startsWith('pglite:') || config.db.url === 'memory';
 }
 
-export async function closeDb(): Promise<void> {
-  if (instance) {
-    await instance.pool.end();
-    instance = null;
+/** Create the application database based on DATABASE_URL. */
+export async function createDatabase(): Promise<DatabaseHandle> {
+  if (usingPglite()) {
+    const { createPgliteDatabase } = await import('./pglite');
+    return createPgliteDatabase(config.db.url);
   }
+  const pool = new Pool({ connectionString: config.db.url, max: 10 });
+  return { db: new PgDatabase(pool), close: () => pool.end() };
 }
