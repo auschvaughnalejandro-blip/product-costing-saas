@@ -1,10 +1,16 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
+import type { CostInput } from '@costing/shared';
 import * as api from '../lib/api';
 import { EditableCostView } from '../components/EditableCostView';
+import { SaveVersionDialog } from '../components/SaveVersionDialog';
+import { VersionsPanel } from '../components/VersionsPanel';
 
 export function ProductPage() {
   const { id } = useParams<{ id: string }>();
+  const [saveInput, setSaveInput] = useState<CostInput | null>(null);
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['product-cost', id],
     queryFn: () => api.getProductCost(id!),
@@ -45,7 +51,21 @@ export function ProductPage() {
         </div>
       </div>
 
-      <EditableCostView initialInput={data.input} initialResult={result} />
+      <EditableCostView
+        initialInput={data.input}
+        initialResult={result}
+        renderActions={({ input }) => (
+          <button className="btn btn-primary btn-sm" onClick={() => setSaveInput(input)}>
+            Save version
+          </button>
+        )}
+      />
+
+      <VersionsPanel productId={id!} />
+
+      {saveInput && id && (
+        <SaveVersionDialog productId={id} input={saveInput} onClose={() => setSaveInput(null)} />
+      )}
     </div>
   );
 }

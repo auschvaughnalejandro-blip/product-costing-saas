@@ -671,3 +671,17 @@ code {
   margin-left: 6px;
   vertical-align: middle;
 }
+.badge-final {
+  background: var(--color-primary-soft);
+  border-color: #bfdbfe;
+  color: var(--color-primary);
+}
+.data-table.compact th,
+.data-table.compact td {
+  padding: 7px 12px;
+  font-size: 13px;
+}
+h1 .badge {
+  vertical-align: middle;
+  margin-left: 6px;
+}
