@@ -1,0 +1,36 @@
+{
+  "name": "product-costing-saas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Product Costing SaaS — deterministic costing engine, editable web UI, AI assistant.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev -w @costing/api",
+    "dev:web": "npm run dev -w @costing/web",
+    "build": "npm run build -w @costing/shared && npm run build -w @costing/api && npm run build -w @costing/web",
+    "test": "npm run test -w @costing/api",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck -w @costing/shared && npm run typecheck -w @costing/api && npm run typecheck -w @costing/web",
+    "db:migrate": "npm run db:migrate -w @costing/api",
+    "db:seed": "npm run db:seed -w @costing/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1"
+  }
+}
