@@ -8,6 +8,10 @@ dist/
 build/
 *.tsbuildinfo
 
+# Local PGlite database files (created by DATABASE_URL=pglite:./path)
+.pgdata/
+**/.pgdata/
+
 # Test / coverage
 coverage/
 .vitest/
