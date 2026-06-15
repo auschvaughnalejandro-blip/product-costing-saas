@@ -5,6 +5,7 @@ import { authRouter } from './auth.routes';
 import { materialsRouter } from './materials.routes';
 import { productsRouter } from './products.routes';
 import { quotationsRouter } from './quotations.routes';
+import { sapRouter } from './sap.routes';
 import { uploadsRouter } from './uploads.routes';
 import { versionsRouter } from './versions.routes';
 
@@ -21,5 +22,6 @@ export function registerRoutes(app: Express, deps: RouteDeps): void {
   app.use('/api/versions', versionsRouter(db));
   app.use('/api/quotations', quotationsRouter(db));
   app.use('/api/uploads', uploadsRouter(db));
+  app.use('/api/sap', sapRouter(db));
   app.use('/api/assistant', assistantRouter());
 }

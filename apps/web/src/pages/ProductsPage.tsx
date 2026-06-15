@@ -4,13 +4,21 @@ import { Link } from 'react-router-dom';
 import * as api from '../lib/api';
 import { formatDateTime } from '../lib/format';
 import { UploadDialog } from '../components/UploadDialog';
+import { SapImportDialog } from '../components/SapImportDialog';
 
 export function ProductsPage() {
   const [showUpload, setShowUpload] = useState(false);
-  const { data: products, isLoading, isError } = useQuery({
+  const [showSap, setShowSap] = useState(false);
+  const {
+    data: products,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['products'],
     queryFn: api.listProducts,
   });
+  // SAP is optional; the button only appears when the client's system is connected.
+  const { data: sap } = useQuery({ queryKey: ['sap-status'], queryFn: api.getSapStatus });
 
   return (
     <div className="page">
@@ -19,9 +27,16 @@ export function ProductsPage() {
           <h1>Products</h1>
           <p className="muted">Upload a spreadsheet to cost a product, or open a saved one.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
-          Upload spreadsheet
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {sap?.configured && (
+            <button className="btn" onClick={() => setShowSap(true)}>
+              Import from SAP
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={() => setShowUpload(true)}>
+            Upload spreadsheet
+          </button>
+        </div>
       </div>
 
       {isLoading && <div className="card">Loading…</div>}
@@ -73,6 +88,7 @@ export function ProductsPage() {
       )}
 
       {showUpload && <UploadDialog onClose={() => setShowUpload(false)} />}
+      {showSap && <SapImportDialog onClose={() => setShowSap(false)} />}
     </div>
   );
 }

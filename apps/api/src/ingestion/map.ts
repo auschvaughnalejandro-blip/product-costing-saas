@@ -3,7 +3,7 @@
  * storage types. This only ever runs on data that has already passed validation.
  */
 import type { BomNode, CostInput, Operation } from '@costing/shared';
-import type { MaterialInput } from '../modules/materials/materials.repo';
+import type { MaterialInput, MaterialSource } from '../modules/materials/materials.repo';
 import type { ProductDefinitionInput, ProductRateSettings } from '../modules/products/types';
 import type { ValidatedData } from './validate';
 
@@ -12,7 +12,12 @@ export interface MappedUpload {
   product: ProductDefinitionInput;
 }
 
-export function mapToProduct(data: ValidatedData): MappedUpload {
+/**
+ * Map validated data to engine + storage types. `source` tags where the
+ * material prices came from (Excel upload by default, or SAP) — the rest of the
+ * pipeline is identical regardless of origin.
+ */
+export function mapToProduct(data: ValidatedData, source: MaterialSource = 'excel'): MappedUpload {
   // Build the BOM tree from the flat parts list.
   const nodes = new Map<string, BomNode>();
   for (const p of data.parts) {
@@ -70,7 +75,7 @@ export function mapToProduct(data: ValidatedData): MappedUpload {
     unit: m.unit ?? null,
     unitPrice: m.unitPrice,
     currency: m.currency ?? data.product.currency,
-    source: 'excel',
+    source,
   }));
 
   const product: ProductDefinitionInput = {

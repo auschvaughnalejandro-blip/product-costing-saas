@@ -5,12 +5,7 @@
  * The UI never calculates cost — it asks the API (which asks the engine) and
  * displays the result. `recalculate` is how every what-if is costed.
  */
-import type {
-  CostInput,
-  CostResult,
-  HealthResponse,
-  ValidationProblem,
-} from '@costing/shared';
+import type { CostInput, CostResult, HealthResponse, ValidationProblem } from '@costing/shared';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -36,7 +31,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   const body = contentType.includes('application/json') ? await res.json() : null;
   if (!res.ok) {
     const err = (body ?? {}) as { error?: string; message?: string; details?: unknown };
-    throw new ApiClientError(res.status, err.error ?? 'error', err.message ?? res.statusText, err.details);
+    throw new ApiClientError(
+      res.status,
+      err.error ?? 'error',
+      err.message ?? res.statusText,
+      err.details,
+    );
   }
   return body as T;
 }
@@ -137,8 +137,7 @@ export const logout = () => apiFetch<{ ok: true }>('/api/auth/logout', { method:
 export const listProducts = () =>
   apiFetch<{ products: ProductSummary[] }>('/api/products').then((r) => r.products);
 
-export const getProductCost = (id: string) =>
-  apiFetch<CostResponse>(`/api/products/${id}/cost`);
+export const getProductCost = (id: string) => apiFetch<CostResponse>(`/api/products/${id}/cost`);
 
 export const getProductDefinition = (id: string) =>
   apiFetch<{ product: unknown }>(`/api/products/${id}`).then((r) => r.product);
@@ -180,7 +179,9 @@ export const getVersion = (id: string) =>
   apiFetch<{ version: VersionRecord; nextActions: ApprovalActionName[] }>(`/api/versions/${id}`);
 
 export const listApprovals = (versionId: string) =>
-  apiFetch<{ events: ApprovalEvent[] }>(`/api/versions/${versionId}/approvals`).then((r) => r.events);
+  apiFetch<{ events: ApprovalEvent[] }>(`/api/versions/${versionId}/approvals`).then(
+    (r) => r.events,
+  );
 
 export const transitionVersion = (
   versionId: string,
@@ -271,6 +272,45 @@ export const assistantSuggestFix = (errors: ValidationProblem[]) =>
     body: JSON.stringify({ errors }),
   });
 
+// ── SAP (second data source — optional) ──────────────────────────────────────
+
+export interface SapStatus {
+  configured: boolean;
+  connector: string;
+}
+
+export type SapImportResult =
+  | { ok: true; productId: string; result: CostResult }
+  | { ok: false; errors: ValidationProblem[] };
+
+export const getSapStatus = () => apiFetch<SapStatus>('/api/sap/status');
+
+/**
+ * Import a material from SAP and cost it through the same engine as Excel.
+ * Bad SAP data comes back as `{ ok: false, errors }` (HTTP 422); a not-configured
+ * or unreachable SAP throws an {@link ApiClientError} with a plain message.
+ */
+export async function importFromSap(material: string): Promise<SapImportResult> {
+  const res = await fetch(`${API_URL}/api/sap/import`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ material }),
+  });
+  const body = await res.json().catch(() => null);
+  if (res.status === 422) return body as SapImportResult;
+  if (!res.ok) {
+    const err = (body ?? {}) as { error?: string; message?: string; details?: unknown };
+    throw new ApiClientError(
+      res.status,
+      err.error ?? 'error',
+      err.message ?? res.statusText,
+      err.details,
+    );
+  }
+  return body as SapImportResult;
+}
+
 export const templateUrl = `${API_URL}/api/uploads/template`;
 
 export async function uploadExcel(file: File, opts?: { dryRun?: boolean }): Promise<UploadResult> {
@@ -285,7 +325,12 @@ export async function uploadExcel(file: File, opts?: { dryRun?: boolean }): Prom
   if (res.status === 422) return body as UploadResult;
   if (!res.ok) {
     const err = (body ?? {}) as { error?: string; message?: string; details?: unknown };
-    throw new ApiClientError(res.status, err.error ?? 'error', err.message ?? res.statusText, err.details);
+    throw new ApiClientError(
+      res.status,
+      err.error ?? 'error',
+      err.message ?? res.statusText,
+      err.details,
+    );
   }
   return body as UploadResult;
 }
