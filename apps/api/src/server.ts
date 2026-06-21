@@ -8,6 +8,21 @@ import { logger } from './lib/logger';
 async function main(): Promise<void> {
   const { db, close } = await createDatabase();
 
+  // Verify the database is actually reachable before we start accepting requests.
+  // Failing here (with a clear message) beats booting and then failing
+  // mysteriously on the first query.
+  try {
+    await db.query('SELECT 1');
+  } catch (err) {
+    logger.error(
+      `Cannot reach the database at the configured DATABASE_URL. ` +
+        `Check that PostgreSQL is running and the connection string is correct.`,
+      err,
+    );
+    await close().catch(() => undefined);
+    process.exit(1);
+  }
+
   // The in-process PGlite demo database is empty on boot, so always migrate it.
   // A real Postgres is normally migrated explicitly via `npm run db:migrate`, but
   // set MIGRATE_ON_START=true (the Docker image does) for a self-contained boot.

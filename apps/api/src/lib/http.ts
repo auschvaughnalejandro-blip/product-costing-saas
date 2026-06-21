@@ -1,9 +1,38 @@
 /** HTTP helpers: a typed application error, async wrapper, and error middleware. */
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { MulterError } from 'multer';
 import { ZodError } from 'zod';
 import type { ApiError } from '@costing/shared';
+import { config } from '../config';
 import { EngineError } from '../engine/errors';
 import { logger } from './logger';
+
+/**
+ * Error codes that mean "the database is unreachable / went away" rather than a
+ * fault in our code. We translate these into a clean 503 so a DB blip mid-session
+ * gives the user a retry message instead of crashing the request.
+ */
+const DB_UNAVAILABLE_CODES = new Set([
+  'ECONNREFUSED', // nothing listening
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'ENOTFOUND', // host can't be resolved
+  'EPIPE',
+  '08000', // connection_exception
+  '08001', // sqlclient_unable_to_establish_sqlconnection
+  '08003', // connection_does_not_exist
+  '08004', // sqlserver_rejected_establishment_of_sqlconnection
+  '08006', // connection_failure
+  '57P01', // admin_shutdown
+  '57P03', // cannot_connect_now
+  '53300', // too_many_connections
+]);
+
+function isDatabaseUnavailable(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === 'string' && DB_UNAVAILABLE_CODES.has(code);
+}
 
 /** An error with an HTTP status and a stable machine-readable code. */
 export class AppError extends Error {
@@ -74,6 +103,32 @@ export function errorHandler(
   if (err instanceof AppError) {
     const body: ApiError = { error: err.code, message: err.message, details: err.details };
     res.status(err.status).json(body);
+    return;
+  }
+
+  // File-upload errors from multer → clear, plain-language messages (never a crash).
+  if (err instanceof MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? `That file is too large. The maximum upload size is ${config.upload.maxMb} MB.`
+        : `The file upload failed: ${err.message}.`;
+    const body: ApiError = {
+      error: 'upload_error',
+      message,
+      details: { code: err.code },
+    };
+    res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json(body);
+    return;
+  }
+
+  // Database went away mid-request → 503 with a retry message, not a 500 crash.
+  if (isDatabaseUnavailable(err)) {
+    logger.error('Database unavailable', err);
+    const body: ApiError = {
+      error: 'service_unavailable',
+      message: 'The service is temporarily unavailable (database connection lost). Please try again shortly.',
+    };
+    res.status(503).json(body);
     return;
   }
 

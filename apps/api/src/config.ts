@@ -30,29 +30,51 @@ function loadEnv(): void {
 
 loadEnv();
 
-const EnvSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().int().positive().default(3000),
-  WEB_ORIGIN: z.string().default('http://localhost:5173'),
+const DEV_JWT_SECRET = 'dev-only-change-me-to-a-long-random-string';
 
-  DATABASE_URL: z.string().default('postgresql://costing:costing@localhost:5432/costing'),
+const EnvSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    PORT: z.coerce.number().int().positive().default(3000),
+    // CORS allowed origin(s), comma-separated. ALLOWED_ORIGIN is the preferred name;
+    // WEB_ORIGIN is accepted as a fallback for backwards compatibility.
+    ALLOWED_ORIGIN: z.string().optional(),
+    WEB_ORIGIN: z.string().default('http://localhost:5173'),
 
-  JWT_SECRET: z.string().min(1).default('dev-only-change-me-to-a-long-random-string'),
-  JWT_EXPIRES_IN: z.string().default('7d'),
+    // Maximum accepted upload size in megabytes. Real manufacturing spreadsheets
+    // can be large, so the default is generous; both multer and the body parser
+    // are sized from this single number.
+    MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
 
-  // When 'true', run pending migrations against the configured database on boot.
-  // Used by the Docker image so `docker compose up` is self-contained.
-  MIGRATE_ON_START: z.string().default('false'),
+    DATABASE_URL: z.string().default('postgresql://costing:costing@localhost:5432/costing'),
 
-  AI_PROVIDER: z.enum(['gemini', 'none']).default('gemini'),
-  GEMINI_API_KEY: z.string().default(''),
-  GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
+    JWT_SECRET: z.string().min(1).default(DEV_JWT_SECRET),
+    JWT_EXPIRES_IN: z.string().default('7d'),
 
-  SAP_BASE_URL: z.string().default(''),
-  SAP_CLIENT: z.string().default(''),
-  SAP_USERNAME: z.string().default(''),
-  SAP_PASSWORD: z.string().default(''),
-});
+    // When 'true', run pending migrations against the configured database on boot.
+    // Used by the Docker image so `docker compose up` is self-contained.
+    MIGRATE_ON_START: z.string().default('false'),
+
+    AI_PROVIDER: z.enum(['gemini', 'none']).default('gemini'),
+    GEMINI_API_KEY: z.string().default(''),
+    GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
+
+    SAP_BASE_URL: z.string().default(''),
+    SAP_CLIENT: z.string().default(''),
+    SAP_USERNAME: z.string().default(''),
+    SAP_PASSWORD: z.string().default(''),
+  })
+  // Fail fast in production if a required secret is still on its dev placeholder,
+  // rather than booting silently insecure.
+  .superRefine((value, ctx) => {
+    if (value.NODE_ENV === 'production' && value.JWT_SECRET === DEV_JWT_SECRET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_SECRET'],
+        message: 'JWT_SECRET must be set to a long random value in production (not the dev default).',
+      });
+    }
+  });
 
 const parsed = EnvSchema.safeParse(process.env);
 if (!parsed.success) {
@@ -68,10 +90,19 @@ export const config = {
   isProduction: env.NODE_ENV === 'production',
   isTest: env.NODE_ENV === 'test',
   port: env.PORT,
-  /** Allowed browser origins (comma-separated in WEB_ORIGIN). */
-  webOrigins: env.WEB_ORIGIN.split(',')
+  /**
+   * Allowed browser origins for CORS (comma-separated). Prefers ALLOWED_ORIGIN,
+   * falling back to WEB_ORIGIN; in production set this to the real domain only.
+   */
+  webOrigins: (env.ALLOWED_ORIGIN ?? env.WEB_ORIGIN)
+    .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+  /** Upload limits, derived from MAX_UPLOAD_MB and shared by multer + body parser. */
+  upload: {
+    maxMb: env.MAX_UPLOAD_MB,
+    maxBytes: env.MAX_UPLOAD_MB * 1024 * 1024,
+  },
   db: {
     url: env.DATABASE_URL,
   },

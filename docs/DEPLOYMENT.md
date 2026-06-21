@@ -57,9 +57,10 @@ All configuration comes from the environment (never hard-coded). Copy
 | `PORT` | api | API listen port (default 3000). |
 | `DATABASE_URL` | api | PostgreSQL connection string. In compose it points at the `db` service. |
 | `MIGRATE_ON_START` | api | `true` to run migrations on boot. Set in compose; for managed Postgres you may prefer to run `npm run db:migrate` as a release step instead. |
-| `JWT_SECRET` | api | **Must** be a long random value in production. |
+| `JWT_SECRET` | api | **Must** be a long random value in production. With `NODE_ENV=production` the API refuses to start while this is still the dev default — set it before deploying. |
 | `JWT_EXPIRES_IN` | api | Session lifetime (default `7d`). |
-| `WEB_ORIGIN` | api | Allowed browser origin(s) for CORS. With the nginx proxy this isn't strictly needed (same origin), but set it to the public web URL. |
+| `ALLOWED_ORIGIN` | api | Allowed browser origin(s) for CORS, comma-separated; set to the public web URL in production. (`WEB_ORIGIN` is accepted as a fallback.) With the nginx proxy this isn't strictly needed (same origin). |
+| `MAX_UPLOAD_MB` | api | Max accepted upload size in MB (default 50); sizes both the file-upload and JSON body limits. |
 | `AI_PROVIDER` / `GEMINI_API_KEY` / `GEMINI_MODEL` | api | AI assistant. Blank key → assistant runs in "not configured" mode; the rest of the app is unaffected. |
 | `SAP_BASE_URL` / `SAP_CLIENT` / `SAP_USERNAME` / `SAP_PASSWORD` | api | SAP S/4HANA. Blank → SAP disabled; the app runs fully on Excel. See `docs/SAP_INTEGRATION.md`. |
 | `VITE_API_URL` | web (build arg) | Base URL of the API as seen by the browser. **Blank** → relative `/api`, proxied by nginx (recommended). Set to a full URL only if the API is on a different host. |

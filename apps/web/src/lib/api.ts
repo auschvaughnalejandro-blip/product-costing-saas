@@ -7,7 +7,10 @@
  */
 import type { CostInput, CostResult, HealthResponse, ValidationProblem } from '@costing/shared';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+// Blank by default → the browser makes same-origin requests to `/api`, which the
+// Vite dev server proxies to the API (see vite.config.ts) and nginx proxies in
+// production. Set VITE_API_URL only when the API lives on a different origin.
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 export class ApiClientError extends Error {
   constructor(
@@ -21,22 +24,37 @@ export class ApiClientError extends Error {
   }
 }
 
+/** Shown when the server can't be reached at all (server down, network off). */
+const NETWORK_MESSAGE = 'Unable to connect to the server. Check your connection and that the API is running.';
+
+/** True for a fetch() that rejected because the request never reached the server. */
+function isNetworkError(err: unknown): boolean {
+  return err instanceof TypeError;
+}
+
+/** Build an ApiClientError from a non-OK JSON response body. */
+function errorFromBody(status: number, statusText: string, body: unknown): ApiClientError {
+  const err = (body ?? {}) as { error?: string; message?: string; details?: unknown };
+  return new ApiClientError(status, err.error ?? 'error', err.message ?? statusText, err.details);
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  const res = await fetch(`${API_URL}${path}`, { credentials: 'include', ...options, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, { credentials: 'include', ...options, headers });
+  } catch (err) {
+    // A rejected fetch means the request never reached the server (no status).
+    if (isNetworkError(err)) throw new ApiClientError(0, 'network', NETWORK_MESSAGE);
+    throw err;
+  }
   const contentType = res.headers.get('content-type') ?? '';
   const body = contentType.includes('application/json') ? await res.json() : null;
   if (!res.ok) {
-    const err = (body ?? {}) as { error?: string; message?: string; details?: unknown };
-    throw new ApiClientError(
-      res.status,
-      err.error ?? 'error',
-      err.message ?? res.statusText,
-      err.details,
-    );
+    throw errorFromBody(res.status, res.statusText, body);
   }
   return body as T;
 }
@@ -291,46 +309,72 @@ export const getSapStatus = () => apiFetch<SapStatus>('/api/sap/status');
  * or unreachable SAP throws an {@link ApiClientError} with a plain message.
  */
 export async function importFromSap(material: string): Promise<SapImportResult> {
-  const res = await fetch(`${API_URL}/api/sap/import`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ material }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/sap/import`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ material }),
+    });
+  } catch (err) {
+    if (isNetworkError(err)) throw new ApiClientError(0, 'network', NETWORK_MESSAGE);
+    throw err;
+  }
   const body = await res.json().catch(() => null);
   if (res.status === 422) return body as SapImportResult;
-  if (!res.ok) {
-    const err = (body ?? {}) as { error?: string; message?: string; details?: unknown };
-    throw new ApiClientError(
-      res.status,
-      err.error ?? 'error',
-      err.message ?? res.statusText,
-      err.details,
-    );
-  }
+  if (!res.ok) throw errorFromBody(res.status, res.statusText, body);
   return body as SapImportResult;
 }
 
 export const templateUrl = `${API_URL}/api/uploads/template`;
 
-export async function uploadExcel(file: File, opts?: { dryRun?: boolean }): Promise<UploadResult> {
-  const form = new FormData();
-  form.append('file', file);
-  const res = await fetch(`${API_URL}/api/uploads/excel${opts?.dryRun ? '?dryRun=1' : ''}`, {
-    method: 'POST',
-    credentials: 'include',
-    body: form,
+export interface UploadOptions {
+  dryRun?: boolean;
+  /** Called with 0–100 as the file uploads, so the UI can show real progress. */
+  onProgress?: (percent: number) => void;
+}
+
+/**
+ * Upload an Excel file. Uses XMLHttpRequest (not fetch) so we get real upload
+ * progress events. A malformed file returns `{ ok: false, errors }` (HTTP 422);
+ * an unreachable server or a too-large/rejected file throws an ApiClientError
+ * with a plain-language message.
+ */
+export function uploadExcel(file: File, opts?: UploadOptions): Promise<UploadResult> {
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/api/uploads/excel${opts?.dryRun ? '?dryRun=1' : ''}`);
+    xhr.withCredentials = true;
+
+    if (opts?.onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) opts.onProgress?.(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+
+    xhr.onload = () => {
+      let body: unknown = null;
+      try {
+        body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        body = null;
+      }
+      if (xhr.status === 422) {
+        resolve(body as UploadResult);
+        return;
+      }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(errorFromBody(xhr.status, xhr.statusText, body));
+        return;
+      }
+      resolve(body as UploadResult);
+    };
+
+    xhr.onerror = () => reject(new ApiClientError(0, 'network', NETWORK_MESSAGE));
+    xhr.ontimeout = () => reject(new ApiClientError(0, 'network', NETWORK_MESSAGE));
+    xhr.send(form);
   });
-  const body = await res.json().catch(() => null);
-  if (res.status === 422) return body as UploadResult;
-  if (!res.ok) {
-    const err = (body ?? {}) as { error?: string; message?: string; details?: unknown };
-    throw new ApiClientError(
-      res.status,
-      err.error ?? 'error',
-      err.message ?? res.statusText,
-      err.details,
-    );
-  }
-  return body as UploadResult;
 }

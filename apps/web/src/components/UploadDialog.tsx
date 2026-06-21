@@ -11,6 +11,8 @@ export function UploadDialog({ onClose }: { onClose: () => void }) {
   const [errors, setErrors] = useState<ValidationProblem[] | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [fix, setFix] = useState<api.FixSuggestion | null>(null);
   const [fixBusy, setFixBusy] = useState(false);
 
@@ -35,19 +37,26 @@ export function UploadDialog({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setErrors(null);
     setMessage(null);
+    setSuccess(null);
+    setProgress(0);
     try {
-      const result = await api.uploadExcel(file);
+      const result = await api.uploadExcel(file, { onProgress: setProgress });
       if (!result.ok) {
         setErrors(result.errors);
         return;
       }
+      // Confirm the file was received and costed before whisking the user away.
+      setSuccess('File received and costed successfully. Opening it now…');
       await qc.invalidateQueries({ queryKey: ['products'] });
-      onClose();
-      navigate(`/products/${result.productId}`);
+      setTimeout(() => {
+        onClose();
+        navigate(`/products/${result.productId}`);
+      }, 900);
     } catch (err) {
       setMessage(err instanceof api.ApiClientError ? err.message : 'Upload failed.');
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -73,11 +82,33 @@ export function UploadDialog({ onClose }: { onClose: () => void }) {
             setFile(e.target.files?.[0] ?? null);
             setErrors(null);
             setMessage(null);
+            setSuccess(null);
             setFix(null);
           }}
         />
 
-        {message && <div className="alert alert-danger">{message}</div>}
+        {busy && progress !== null && (
+          <div style={{ marginTop: 12 }}>
+            <div className="progress" role="progressbar" aria-valuenow={progress}>
+              <div className="progress-bar" style={{ width: `${progress}%` }} />
+            </div>
+            <p className="muted" style={{ marginTop: 6 }}>
+              {progress < 100 ? `Uploading… ${progress}%` : 'Processing on the server…'}
+            </p>
+          </div>
+        )}
+
+        {success && (
+          <div className="alert alert-success" style={{ marginTop: 12 }}>
+            {success}
+          </div>
+        )}
+
+        {message && (
+          <div className="alert alert-danger" style={{ marginTop: 12 }}>
+            {message}
+          </div>
+        )}
 
         {errors && (
           <div className="alert alert-warning" style={{ marginTop: 12 }}>

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
+import { config } from '../config';
 import type { Database } from '../db/pool';
 import { asyncHandler, badRequest } from '../lib/http';
 import { currentUser, requireAuth, requireRole } from '../middleware/auth';
@@ -8,7 +9,28 @@ import { buildTemplateBuffer, ingestExcel, mappedToCostInput } from '../ingestio
 import { upsertMaterial } from '../modules/materials/materials.repo';
 import { saveProduct } from '../modules/products/products.repo';
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+// Excel MIME types browsers send. We also fall back to the filename extension,
+// because some browsers send a generic "application/octet-stream" for .xlsx/.xls.
+const EXCEL_MIME_TYPES = new Set([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // .xls
+]);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: config.upload.maxBytes },
+  // Reject anything that isn't an Excel workbook with a clear, plain-language
+  // error before we ever try to parse it.
+  fileFilter: (_req, file, cb) => {
+    const name = file.originalname.toLowerCase();
+    const looksLikeExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
+    if (EXCEL_MIME_TYPES.has(file.mimetype) || looksLikeExcel) {
+      cb(null, true);
+      return;
+    }
+    cb(badRequest('Only Excel files (.xlsx or .xls) are accepted. Please upload a spreadsheet.'));
+  },
+});
 
 export function uploadsRouter(db: Database): Router {
   const r = Router();

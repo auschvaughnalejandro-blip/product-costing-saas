@@ -81,6 +81,20 @@ Per-workcentre labour/machine rates, referenced by operations.
 
 ---
 
+### File rules & how the parser handles real spreadsheets
+
+- **Accepted file types:** `.xlsx` and `.xls` only. Anything else is rejected
+  immediately with a clear message — it's never parsed.
+- **Maximum size:** 50 MB by default (configurable via `MAX_UPLOAD_MB`). A file
+  over the limit gets a plain "that file is too large" message, not a crash.
+- **Blank rows:** completely empty rows (the trailing/in-between blanks real
+  spreadsheets always carry) are stripped before validation, so they never
+  produce spurious "missing value" errors.
+- **Merged cells:** Excel stores a merged region's value only in its top-left
+  cell and leaves the rest blank. The parser resolves those blanks back to the
+  merge's master value, so a value sitting under a merged header or spanning a
+  region is read consistently instead of coming back empty.
+
 ### How it's processed
 
 The upload goes through three separate, independently-tested steps:

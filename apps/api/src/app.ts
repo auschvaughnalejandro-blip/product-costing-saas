@@ -20,13 +20,20 @@ export function createApp(deps: AppDeps): Express {
   const app = express();
 
   app.use(helmet());
+  // CORS must be applied before any routes so it covers every endpoint and the
+  // browser's preflight requests. Allowed origins come from the environment
+  // (ALLOWED_ORIGIN / WEB_ORIGIN) so dev and prod differ by config, not code.
   app.use(
     cors({
       origin: config.webOrigins,
       credentials: true,
     }),
   );
-  app.use(express.json({ limit: '10mb' }));
+  // Body parsers sized from MAX_UPLOAD_MB. Excel uploads are multipart (handled
+  // by multer), but large JSON recalculation payloads need the headroom too.
+  const bodyLimit = `${config.upload.maxMb}mb`;
+  app.use(express.json({ limit: bodyLimit }));
+  app.use(express.urlencoded({ limit: bodyLimit, extended: true }));
   app.use(cookieParser());
   app.use(authMiddleware);
 

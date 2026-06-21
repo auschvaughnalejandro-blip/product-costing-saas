@@ -71,6 +71,39 @@ describe('API integration', () => {
     expect(res.body.errors.length).toBeGreaterThan(0);
   });
 
+  it('rejects a non-Excel upload with a clear message (no crash)', async () => {
+    const res = await agent
+      .post('/api/uploads/excel')
+      .attach('file', Buffer.from('not a spreadsheet'), 'notes.txt')
+      .expect(400);
+    expect(res.body.message).toMatch(/excel/i);
+  });
+
+  it('accepts a large Excel file (well past the old body limit) and costs it', async () => {
+    // The sample widget plus thousands of (unused) material rows — a file far
+    // bigger than Express's old ~100kb default body limit. It must still upload
+    // and cost correctly, proving the upload path isn't capped too low.
+    const spec = sampleWorkbookSpec();
+    for (let i = 0; i < 8000; i += 1) {
+      spec.materials.push({
+        Code: `BULK-${i}-${Math.random().toString(36).slice(2)}`,
+        Name: `Bulk filler material row ${i} ${Math.random().toString(36).slice(2)}`,
+        Unit: 'kg',
+        UnitPrice: 1,
+        Currency: 'USD',
+      });
+    }
+    const buffer = await writeWorkbook(spec);
+    expect(buffer.length).toBeGreaterThan(100 * 1024); // clearly a "large" file
+
+    const res = await agent
+      .post('/api/uploads/excel?dryRun=1')
+      .attach('file', buffer, 'big-widget.xlsx')
+      .expect(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.result.total.total).toBe('108.00');
+  });
+
   it('lists products including the uploaded one', async () => {
     const res = await agent.get('/api/products').expect(200);
     expect(res.body.products.map((p: { code: string }) => p.code)).toContain('WIDGET');

@@ -1,0 +1,628 @@
+import { useState } from "react";
+
+const C = {
+  bg: '#0A0D14', surface: '#131720', elevated: '#1C2133',
+  border: '#252D45', borderLight: '#2D3655',
+  text: '#C8D0E0', muted: '#5A6480', dim: '#3A4260',
+  accent: '#4F8EF7', accentDim: '#1E3A6E',
+  success: '#2ECC71', warning: '#F39C12', danger: '#E74C3C',
+  ai: '#9B59B6', aiDim: '#3D1A5C',
+};
+
+const modules = [
+  { id: '4.1', short: 'Login', name: 'Authentication & Workspace', role: 'Entry point' },
+  { id: '4.2', short: 'Dashboard', name: 'Dashboard / Home', role: 'Landing after login' },
+  { id: '4.3', short: 'Upload', name: 'Data Ingestion & Excel Clean-Up', role: 'Primary data entry' },
+  { id: '4.4', short: 'Cost Tree', name: 'Cost Tree / BOM Workspace', role: '★ Core screen' },
+  { id: '4.5', short: 'Breakdown', name: 'Cost Breakdown & Buckets', role: 'Analysis view' },
+  { id: '4.6', short: 'What-If', name: 'Simulation / What-If', role: 'Scenario explorer' },
+  { id: '4.7', short: 'Quotation', name: 'Estimation & Quotation', role: 'Output' },
+  { id: '4.8', short: 'Versions', name: 'Versioning & Comparison', role: 'History & audit' },
+  { id: '4.9', short: 'Approvals', name: 'Approvals & Workflow', role: 'Sign-off gate' },
+  { id: '4.10', short: 'AI Panel', name: 'AI Assistant', role: 'Cross-cutting' },
+  { id: '4.11', short: 'Master Data', name: 'Master Data Admin', role: 'Admin only' },
+  { id: '4.12', short: 'Settings', name: 'Settings & Governance', role: 'Config & security' },
+];
+
+function Box({ label, w = '100%', h = 36, style = {}, children, dotted }) {
+  return (
+    <div style={{
+      width: w, minHeight: h, border: `1px ${dotted ? 'dashed' : 'solid'} ${C.borderLight}`,
+      borderRadius: 4, display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', padding: '4px 8px', fontSize: 10, color: C.muted,
+      backgroundColor: C.elevated, boxSizing: 'border-box', ...style
+    }}>
+      {label && <span style={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 9, color: style.color || C.dim, textAlign: 'center' }}>{label}</span>}
+      {children}
+    </div>
+  );
+}
+
+function Row({ children, gap = 6, style = {} }) {
+  return <div style={{ display: 'flex', gap, ...style }}>{children}</div>;
+}
+
+function Sec({ title, children, style = {} }) {
+  return (
+    <div style={{ marginBottom: 10, ...style }}>
+      {title && <div style={{ fontSize: 8, color: C.dim, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 5 }}>{title}</div>}
+      {children}
+    </div>
+  );
+}
+
+const screens = {
+  '4.1': () => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 14 }}>
+      <Box label="ebita.ai  ·  Product Costing Platform" w={300} h={44} style={{ fontSize: 12, color: C.accent }} />
+      <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: 20, width: 300, backgroundColor: C.elevated, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ fontSize: 11, color: C.text, textAlign: 'center', marginBottom: 2 }}>Sign in to your workspace</div>
+        <Box label="Email address" h={32} />
+        <Box label="Password (hidden)" h={32} />
+        <Row style={{ justifyContent: 'space-between' }}>
+          <Box label="☐  Remember me" w={120} h={22} style={{ border: 'none', backgroundColor: 'transparent', fontSize: 9 }} />
+          <Box label="Forgot password?" w={110} h={22} style={{ border: 'none', backgroundColor: 'transparent', color: C.accent, fontSize: 9 }} />
+        </Row>
+        <Box label="Sign In" h={34} style={{ backgroundColor: C.accentDim, borderColor: C.accent, color: C.accent }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+          <span style={{ fontSize: 8, color: C.dim }}>OR</span>
+          <div style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+        </div>
+        <Box label="🔵  Continue with Google (SSO / OAuth2)" h={34} />
+      </div>
+      <Row gap={8} style={{ width: 300 }}>
+        <Box label="🔒 HTTPS / TLS" w="33%" h={28} style={{ fontSize: 8 }} />
+        <Box label="JWT — httpOnly cookie" w="33%" h={28} style={{ fontSize: 8 }} />
+        <Box label="Session expires 8h" w="33%" h={28} style={{ fontSize: 8 }} />
+      </Row>
+    </div>
+  ),
+
+  '4.2': () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <Row>
+        <Box label="Logo" w={100} h={32} />
+        <Box label="Search estimates..." w="100%" h={32} />
+        <Box label="🔔  3" w={50} h={32} style={{ color: C.warning }} />
+        <Box label="Ahmed K. · Estimator" w={140} h={32} style={{ color: C.text }} />
+      </Row>
+      <Row gap={8}>
+        {[['Active Estimates','12',C.accent],['Pending Approval','3',C.warning],['Drafts','7',C.text],['Completed this month','24',C.success]].map(([l,v,col]) => (
+          <div key={l} style={{ flex: 1, border: `1px solid ${col}30`, borderRadius: 6, padding: 10, backgroundColor: C.elevated }}>
+            <div style={{ fontSize: 8, color: C.muted, textTransform: 'uppercase', letterSpacing: 1 }}>{l}</div>
+            <div style={{ fontSize: 20, color: col, marginTop: 4 }}>{v}</div>
+          </div>
+        ))}
+      </Row>
+      <Row gap={8} style={{ flex: 1 }}>
+        <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <Sec title="Recent quotations & estimates">
+            {[['Subsea Gate Valve 4" — SLQ25070A','DRAFT'],['Wellhead Equipment Package','FINAL'],['Gate Valve Repair — Unit 4471','REVISED'],['Casing Hanger Assembly','DRAFT']].map(([name, status]) => (
+              <Row key={name} gap={6} style={{ marginBottom: 4 }}>
+                <Box label={name} w="100%" h={26} style={{ justifyContent: 'flex-start', paddingLeft: 8, fontSize: 9, textTransform: 'none', color: C.text }} />
+                <Box label={status} w={65} h={26} style={{ fontSize: 8, color: status === 'FINAL' ? C.success : C.warning, flexShrink: 0 }} />
+                <Box label="Open →" w={55} h={26} style={{ fontSize: 8, color: C.accent, borderColor: C.accent, flexShrink: 0 }} />
+              </Row>
+            ))}
+          </Sec>
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Sec title="Quick actions">
+            <Box label="＋  New Estimate" h={32} style={{ color: C.accent, borderColor: C.accent, marginBottom: 6 }} />
+            <Box label="↑  Upload Excel File" h={32} />
+          </Sec>
+          <Sec title="Pending approvals">
+            <Box label="⚠  Gate Valve 5000PSI" h={28} style={{ color: C.warning, marginBottom: 4 }} />
+            <Box label="⚠  Wellhead Assembly" h={28} style={{ color: C.warning }} />
+          </Sec>
+        </div>
+      </Row>
+    </div>
+  ),
+
+  '4.3': () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <Sec title="Step 1 — Upload Excel file (max 50MB · .xlsx or .xls only)">
+        <div style={{ border: `2px dashed ${C.borderLight}`, borderRadius: 8, height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: C.elevated }}>
+          <div style={{ fontSize: 22 }}>📂</div>
+          <div style={{ fontSize: 11, color: C.text }}>Drag & drop Excel file here, or click to browse</div>
+          <div style={{ fontSize: 9, color: C.muted }}>Multer middleware handles the file upload · 50MB limit enforced server-side</div>
+        </div>
+      </Sec>
+      <Sec title="Step 2 — Validation results (pure code — no AI)">
+        <Row gap={6}>
+          {[['✓  BOM sheet found',C.success],['✓  Routing sheet found',C.success],['✗  2 material prices missing',C.danger],['⚠  3 empty rows stripped',C.warning]].map(([l,c]) => (
+            <Box key={l} label={l} w="25%" h={30} style={{ color: c, fontSize: 8 }} />
+          ))}
+        </Row>
+      </Sec>
+      <Sec title="Step 3 — AI clean-up suggestions (user must approve each one before anything changes)">
+        <div style={{ border: `1px solid ${C.aiDim}`, borderRadius: 6, padding: 10, backgroundColor: '#140A22' }}>
+          <div style={{ fontSize: 9, color: C.ai, marginBottom: 8 }}>🤖  AI has matched vague material descriptions to known materials:</div>
+          {[['Row 14: "SS-316L-BAR" → matched to RM-316L-25 ($68.50/m)'],['Row 22: "Carbon Steel" → matched to RM-4140-25 ($420/unit)']].map(([s]) => (
+            <Row key={s} gap={6} style={{ marginBottom: 6 }}>
+              <Box label={s} w="100%" h={26} style={{ border: `1px solid ${C.aiDim}`, backgroundColor: 'transparent', fontSize: 8, textTransform: 'none', justifyContent: 'flex-start', paddingLeft: 8, color: C.text }} />
+              <Box label="✓ Accept" w={65} h={26} style={{ color: C.success, borderColor: C.success, flexShrink: 0, fontSize: 9 }} />
+              <Box label="✗ Dismiss" w={65} h={26} style={{ color: C.danger, borderColor: C.danger, flexShrink: 0, fontSize: 9 }} />
+            </Row>
+          ))}
+        </div>
+      </Sec>
+      <Box label="→  Process file and open in Cost Tree" h={36} style={{ color: C.accent, borderColor: C.accent }} />
+    </div>
+  ),
+
+  '4.4': () => (
+    <div style={{ height: '100%', display: 'flex', gap: 10 }}>
+      <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <Row gap={6}>
+          <Box label="Subsea Gate Valve 4&quot; 5000PSI — SLQ25070A" w="100%" h={30} style={{ justifyContent: 'flex-start', paddingLeft: 10, color: C.text, fontSize: 10, textTransform: 'none' }} />
+          <Box label="Save draft" w={75} h={30} style={{ flexShrink: 0, fontSize: 9 }} />
+          <Box label="⚡ What-If" w={75} h={30} style={{ flexShrink: 0, color: C.warning, borderColor: C.warning, fontSize: 9 }} />
+          <Box label="Generate Quote" w={95} h={30} style={{ flexShrink: 0, color: C.accent, borderColor: C.accent, fontSize: 9 }} />
+        </Row>
+        <Row gap={3}>
+          {['Part / Description','Qty','UoM','Raw Mat.','Labour','Machine','O/H','Total'].map((h, i) => (
+            <Box key={h} label={h} w={i === 0 ? '28%' : '10.28%'} h={22} style={{ fontSize: 8, backgroundColor: C.bg }} />
+          ))}
+        </Row>
+        {[
+          { n: '▼  Subsea Gate Valve 4"', v: ['1','EA','$420','$580','$480','$148','$1,628'], bold: true, indent: 0 },
+          { n: '  ▼  Valve Body Assembly', v: ['1','EA','$280','$420','$340','$104','$1,144'], bold: true, indent: 1 },
+          { n: '    ▷  Machined Valve Body', v: ['1','EA','$210','$380','$290','$88','$968'], bold: false, indent: 2 },
+          { n: '    ▷  Gate & Stem Sub-Assy', v: ['1','EA','$70','$40','$50','$16','$176'], bold: false, indent: 2 },
+          { n: '  ▷  Actuator Flange', v: ['1','EA','$85','$110','$90','$29','$314'], bold: false, indent: 1 },
+          { n: '  ▷  Hardware Kit', v: ['1','SET','$55','$50','$50','$15','$170'], bold: false, indent: 1 },
+        ].map((row, i) => (
+          <Row key={i} gap={3}>
+            <Box label={row.n} w="28%" h={26} style={{ justifyContent: 'flex-start', paddingLeft: 8, fontSize: 9, color: row.bold ? C.text : C.muted, backgroundColor: row.bold ? C.elevated : C.bg, textTransform: 'none' }} />
+            {row.v.map((v, j) => (
+              <Box key={j} label={v} w="10.28%" h={26} style={{ fontSize: 9, color: j === 6 ? C.accent : C.muted, fontWeight: j === 6 ? 'bold' : 'normal' }} />
+            ))}
+          </Row>
+        ))}
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Sec title="Cost summary">
+          {[['Raw Material','$420'],['Labour','$580'],['Machine','$480'],['Overhead','$148'],['TOTAL','$1,628']].map(([k,v], i) => (
+            <Row key={k} gap={5} style={{ marginBottom: 4 }}>
+              <Box label={k} w="100%" h={26} style={{ justifyContent: 'flex-start', paddingLeft: 8, fontSize: 9, textTransform: 'none', color: C.muted }} />
+              <Box label={v} w={65} h={26} style={{ fontSize: 9, color: i === 4 ? C.accent : C.muted, borderColor: i === 4 ? C.accent : C.border, flexShrink: 0 }} />
+            </Row>
+          ))}
+        </Sec>
+        <Sec title="AI assistant">
+          <Box label="🤖  Ask about this cost..." h={30} style={{ color: C.ai, borderColor: C.ai, borderStyle: 'dashed', fontSize: 9 }} />
+        </Sec>
+      </div>
+    </div>
+  ),
+
+  '4.5': () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Sec title="Cost buckets — click to drill in">
+        <Row gap={8}>
+          {[['Raw Material','$420','26%',C.accent],['Bought-Out','$55','3%','#10B981'],['Labour','$580','36%',C.warning],['Machine','$480','29%','#EC4899'],['Subcontracting','$0','0%',C.muted],['Overhead','$148','9%',C.ai]].map(([l,v,p,col]) => (
+            <div key={l} style={{ flex: 1, border: `1px solid ${col}25`, borderRadius: 6, padding: 8, backgroundColor: `${col}0A` }}>
+              <div style={{ fontSize: 8, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.8 }}>{l}</div>
+              <div style={{ fontSize: 15, color: col, fontWeight: 'bold', marginTop: 2 }}>{v}</div>
+              <div style={{ fontSize: 8, color: C.muted }}>{p}</div>
+            </div>
+          ))}
+        </Row>
+      </Sec>
+      <Sec title="Visual cost breakdown">
+        <Box label="[ Horizontal stacked bar chart — proportional to each bucket ]" h={44} dotted />
+      </Sec>
+      <Sec title="Line-item detail" style={{ flex: 1 }}>
+        <Row gap={3} style={{ marginBottom: 4 }}>
+          {['Component','Bucket','Amount','% of total','Cost driver'].map(h => (
+            <Box key={h} label={h} w="20%" h={22} style={{ fontSize: 8, backgroundColor: C.bg }} />
+          ))}
+        </Row>
+        {[['CNC Milling Op 30','Machine','$290','17.8%','★ Top driver'],['CNC Labour Op 20','Labour','$380','23.3%','★ Top driver'],['Steel Forging','Raw Mat.','$210','12.9%',''],['Assembly Labour','Labour','$200','12.3%','']].map((row, i) => (
+          <Row key={i} gap={3} style={{ marginBottom: 3 }}>
+            {row.map((cell, j) => (
+              <Box key={j} label={cell} w="20%" h={24} style={{ fontSize: 8, textTransform: 'none', justifyContent: 'flex-start', paddingLeft: 6, color: j === 4 && cell ? C.warning : C.muted }} />
+            ))}
+          </Row>
+        ))}
+      </Sec>
+    </div>
+  ),
+
+  '4.6': () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Sec title="Change a variable — engine recalculates instantly (pure math, not AI)">
+        <Row gap={8}>
+          <Box label="Select variable..." w="40%" h={32} />
+          <Box label="Current value" w="20%" h={32} />
+          <Box label="New value" w="20%" h={32} />
+          <Box label="⚡  Run simulation" w="20%" h={32} style={{ color: C.warning, borderColor: C.warning }} />
+        </Row>
+        <div style={{ fontSize: 9, color: C.muted, marginTop: 4 }}>Example: change Steel Forging qty 1 → 2 · or CNC labour rate $42/hr → $55/hr</div>
+      </Sec>
+      <Row gap={10} style={{ flex: 1 }}>
+        <div style={{ flex: 1 }}>
+          <Sec title="Original">
+            {[['Raw Material','$420'],['Labour','$580'],['Machine','$480'],['Overhead','$148'],['TOTAL','$1,628']].map(([k,v], i) => (
+              <Row key={k} gap={4} style={{ marginBottom: 4 }}>
+                <Box label={k} w="100%" h={24} style={{ fontSize: 8, textTransform: 'none', color: C.muted }} />
+                <Box label={v} w={65} h={24} style={{ fontSize: 9, flexShrink: 0, color: i === 4 ? C.muted : C.muted }} />
+              </Row>
+            ))}
+          </Sec>
+        </div>
+        <div style={{ width: 1, backgroundColor: C.border }} />
+        <div style={{ flex: 1 }}>
+          <Sec title="What-if (modified)">
+            {[['Raw Material','$840','+$420 ▲'],['Labour','$580','—'],['Machine','$480','—'],['Overhead','$184','+$36 ▲'],['TOTAL','$2,084','+$456 ▲']].map(([k,v,d], i) => (
+              <Row key={k} gap={4} style={{ marginBottom: 4 }}>
+                <Box label={k} w="100%" h={24} style={{ fontSize: 8, textTransform: 'none', color: C.muted }} />
+                <Box label={v} w={65} h={24} style={{ fontSize: 9, flexShrink: 0, color: i === 4 ? C.danger : C.muted }} />
+                <Box label={d} w={70} h={24} style={{ fontSize: 8, flexShrink: 0, color: d === '—' ? C.dim : C.danger, borderColor: d === '—' ? C.border : C.danger }} />
+              </Row>
+            ))}
+          </Sec>
+        </div>
+      </Row>
+      <Box label="🤖  AI insight: Doubling steel qty raises material cost by 100% and overhead by 24%. Labour and machine costs are unaffected by this specific change." h={36} style={{ color: C.ai, borderColor: C.ai, borderStyle: 'dashed', fontSize: 9, textTransform: 'none' }} />
+    </div>
+  ),
+
+  '4.7': () => (
+    <div style={{ height: '100%', display: 'flex', gap: 12 }}>
+      <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Sec title="Customer details">
+          <Row gap={8} style={{ marginBottom: 6 }}>
+            <Box label="Customer name" w="50%" h={30} />
+            <Box label="Customer PO reference" w="50%" h={30} />
+          </Row>
+          <Box label="Product / service description" h={30} />
+        </Sec>
+        <Sec title="Pricing & currency">
+          <Row gap={8} style={{ marginBottom: 6 }}>
+            <Box label="Base cost — read only (from engine)" w="50%" h={30} style={{ color: C.muted }} />
+            <Box label="Base currency" w="25%" h={30} />
+            <Box label="Sales currency" w="25%" h={30} />
+          </Row>
+          <Row gap={8} style={{ marginBottom: 6 }}>
+            <Box label="Target margin %" w="25%" h={30} />
+            <Box label="FX rate (auto-refreshed daily)" w="40%" h={30} style={{ color: C.muted }} />
+            <Box label="Quoted price — auto-derived" w="35%" h={30} style={{ color: C.accent }} />
+          </Row>
+          <Box label="Estimate mode:  ●  New-Product / Quotation    ○  Repair / Service" h={30} />
+        </Sec>
+        <Sec title="Terms">
+          <Row gap={8}>
+            <Box label="Payment terms" w="50%" h={30} />
+            <Box label="Validity (days)" w="50%" h={30} />
+          </Row>
+        </Sec>
+        <Row gap={8}>
+          <Box label="📄  Customer report (short — no margin shown)" w="50%" h={34} style={{ color: C.accent, borderColor: C.accent }} />
+          <Box label="📋  Internal report (full cost breakdown)" w="50%" h={34} />
+        </Row>
+      </div>
+      <div style={{ flex: 1 }}>
+        <Sec title="Customer preview — client never sees cost or margin">
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, backgroundColor: C.elevated, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <Box label="Company header / logo" h={28} />
+            <Box label="To: [Customer name] · Ref: [PO]" h={24} />
+            <Box label="Re: [Product description]" h={24} />
+            <Box label="Quoted price: QAR XXXXX" h={30} style={{ color: C.accent, borderColor: C.accent }} />
+            <Box label="Payment terms · Validity period" h={24} />
+            <Box label="[ Signature block ]" h={24} dotted />
+          </div>
+        </Sec>
+      </div>
+    </div>
+  ),
+
+  '4.8': () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Sec title="Version history — Subsea Gate Valve 4&quot; 5000PSI">
+        <Row gap={8}>
+          {[{n:'v1 — Draft',d:'Jun 14',s:'ARCHIVED',cur:false},{n:'v2 — Revised',d:'Jun 16',s:'ARCHIVED',cur:false},{n:'v3 — Final',d:'Jun 18',s:'APPROVED',cur:true}].map(v => (
+            <div key={v.n} style={{ flex: 1, border: `1px solid ${v.cur ? C.accent : C.border}`, borderRadius: 6, padding: 10, backgroundColor: v.cur ? C.accentDim : C.elevated }}>
+              <div style={{ fontSize: 10, color: v.cur ? C.accent : C.muted }}>{v.n}</div>
+              <div style={{ fontSize: 8, color: C.dim }}>{v.d}</div>
+              <div style={{ fontSize: 8, color: v.s === 'APPROVED' ? C.success : C.dim, marginTop: 4 }}>{v.s}</div>
+            </div>
+          ))}
+          <Box label="Select any 2 versions → compare" w={130} h={60} dotted />
+        </Row>
+      </Sec>
+      <Sec title="Side-by-side comparison: v1 Draft vs v3 Final" style={{ flex: 1 }}>
+        <Row gap={3} style={{ marginBottom: 4 }}>
+          {['Line item','v1 — Draft','v3 — Final','Δ Change'].map(h => (
+            <Box key={h} label={h} w="25%" h={22} style={{ fontSize: 8, backgroundColor: C.bg }} />
+          ))}
+        </Row>
+        {[['CNC Labour rate','$38/hr','$42/hr','▲ +$38 (+10.5%)'],['Overhead %','100%','120%','▲ +$29 (+20%)'],['Margin %','25%','30%','▲ +5 points'],['TOTAL COST','$1,490','$1,628','▲ +$138 (+9.3%)'],['QUOTED PRICE','$1,987','$2,326','▲ +$339 (+17.1%)']].map((row, i) => (
+          <Row key={i} gap={3} style={{ marginBottom: 3 }}>
+            {row.map((cell, j) => (
+              <Box key={j} label={cell} w="25%" h={24} style={{ fontSize: 8, textTransform: 'none', color: j === 3 ? (i >= 3 ? C.danger : C.warning) : (i >= 3 ? C.accent : C.muted), backgroundColor: i >= 3 ? C.elevated : C.bg }} />
+            ))}
+          </Row>
+        ))}
+      </Sec>
+    </div>
+  ),
+
+  '4.9': () => (
+    <div style={{ height: '100%', display: 'flex', gap: 12 }}>
+      <div style={{ flex: 1 }}>
+        <Sec title="Pending approval queue">
+          {[{name:'Subsea Gate Valve 4"',sub:'Today 09:14',by:'Ahmed K.'},{name:'Wellhead Equipment Package',sub:'Yesterday 14:32',by:'Sara M.'}].map(item => (
+            <div key={item.name} style={{ border: `1px solid ${C.warning}30`, borderRadius: 6, padding: 10, backgroundColor: `${C.warning}08`, marginBottom: 10 }}>
+              <div style={{ fontSize: 10, color: C.text }}>{item.name}</div>
+              <div style={{ fontSize: 8, color: C.muted, marginTop: 2 }}>Submitted {item.sub} by {item.by}</div>
+              <Box label="Add comment (optional)" h={26} style={{ marginTop: 8, marginBottom: 6, fontSize: 9 }} />
+              <Row gap={6}>
+                <Box label="✓  Approve" w="50%" h={28} style={{ color: C.success, borderColor: C.success, fontSize: 10 }} />
+                <Box label="✗  Reject" w="50%" h={28} style={{ color: C.danger, borderColor: C.danger, fontSize: 10 }} />
+              </Row>
+            </div>
+          ))}
+        </Sec>
+      </div>
+      <div style={{ flex: 2 }}>
+        <Sec title="Immutable audit trail — Subsea Gate Valve 4&quot; (cannot be edited or deleted)">
+          {[{u:'Ahmed K.',a:'Created estimate v1',t:'Jun 14 08:22',type:'create'},{u:'Ahmed K.',a:'Changed CNC labour rate $38 → $42/hr',t:'Jun 16 11:05',type:'edit'},{u:'Ahmed K.',a:'Submitted v3 Final for approval',t:'Jun 18 09:14',type:'submit'},{u:'Talha M.',a:'Approved — cleared for client distribution',t:'Jun 18 10:30',type:'approve'}].map((e, i) => (
+            <Row key={i} gap={10} style={{ marginBottom: 10, alignItems: 'flex-start' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: e.type === 'approve' ? C.success : e.type === 'submit' ? C.warning : C.borderLight, marginTop: 8, flexShrink: 0 }} />
+              <div>
+                <Row gap={8}>
+                  <span style={{ fontSize: 10, color: C.text }}>{e.u}</span>
+                  <span style={{ fontSize: 10, color: C.muted }}>{e.a}</span>
+                </Row>
+                <div style={{ fontSize: 8, color: C.dim }}>{e.t}</div>
+              </div>
+            </Row>
+          ))}
+        </Sec>
+      </div>
+    </div>
+  ),
+
+  '4.10': () => (
+    <div style={{ height: '100%', display: 'flex', gap: 12 }}>
+      <div style={{ flex: 1 }}>
+        <Sec title="Capabilities — available on every single screen">
+          {[{c:'Quick info & definitions',d:'Click ? next to any field for an explanation'},
+            {c:'Cost explanations',d:'Ask "why is this cost high?" — AI explains the drivers'},
+            {c:'Document understanding',d:'Upload requirement docs — AI extracts structured data'},
+            {c:'Excel clean-up',d:'AI proposes fixes for malformed uploads (user approves each)'},
+            {c:'Simpler views',d:'Plain-language summary of a breakdown for sharing'},
+            {c:'What-if help',d:'Explains ripple effects of a change before running it'},
+            {c:'Should-cost estimation',d:'Suggests what a product should cost using historical analogs'},
+            {c:'Anomaly detection',d:'Flags costs that are out-of-line or suspicious'}].map(({c,d}) => (
+            <div key={c} style={{ border: `1px solid ${C.aiDim}`, borderRadius: 5, padding: 8, backgroundColor: '#140A22', marginBottom: 5 }}>
+              <div style={{ fontSize: 9, color: C.ai }}>{c}</div>
+              <div style={{ fontSize: 8, color: C.muted, marginTop: 2 }}>{d}</div>
+            </div>
+          ))}
+        </Sec>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Sec title="Chat panel (floats on every screen — always has current screen context)">
+          <div style={{ border: `1px solid ${C.ai}`, borderRadius: 8, padding: 12, backgroundColor: '#0D0717' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+              <div style={{ backgroundColor: C.elevated, borderRadius: 6, padding: 8, fontSize: 9, color: C.text, maxWidth: '80%', alignSelf: 'flex-end' }}>Why is the CNC milling so expensive?</div>
+              <div style={{ backgroundColor: '#1A0D2E', border: `1px solid ${C.aiDim}`, borderRadius: 6, padding: 8, fontSize: 9, color: C.text }}>🤖  Op 30 (5-axis milling) runs 3 hours at $145/hr = $435 machine cost. It's your single largest cost driver at 26.7% of total. To reduce: negotiate a better machine rate, reduce cycle time, or consider a 3-axis mill for less complex geometry.</div>
+              <div style={{ backgroundColor: C.elevated, borderRadius: 6, padding: 8, fontSize: 9, color: C.text, maxWidth: '80%', alignSelf: 'flex-end' }}>What should this valve body cost?</div>
+              <div style={{ backgroundColor: '#1A0D2E', border: `1px solid ${C.aiDim}`, borderRadius: 6, padding: 8, fontSize: 9, color: C.text }}>🤖  Based on historical analogs for 4" carbon steel valve bodies, should-cost range is $1,400–$1,750. Your estimate of $1,628 sits within this range. No anomaly detected.</div>
+            </div>
+            <Row gap={6}>
+              <Box label="Ask anything about this cost..." w="100%" h={28} style={{ color: C.ai, borderColor: C.ai, borderStyle: 'dashed', fontSize: 9 }} />
+              <Box label="↑" w={32} h={28} style={{ color: C.ai, borderColor: C.ai, flexShrink: 0 }} />
+            </Row>
+          </div>
+        </Sec>
+        <Box label="⚠  AI explains numbers. It never produces or overrides cost figures. All numbers come from the deterministic engine." h={36} style={{ color: C.warning, borderColor: C.warning, fontSize: 8, textTransform: 'none' }} />
+      </div>
+    </div>
+  ),
+
+  '4.11': () => (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Sec title="Materials master data (admin only — each rate is date-stamped for historical integrity)">
+        <Row gap={3} style={{ marginBottom: 4 }}>
+          {['Material ID','Description','Unit','Price','Effective date',''].map(h => (
+            <Box key={h} label={h} w={h === '' ? '12%' : '17.6%'} h={22} style={{ fontSize: 8, backgroundColor: C.bg }} />
+          ))}
+        </Row>
+        {[['RM-4140-25','Steel Forging AISI 4140','Unit','$420.00','2026-01-01'],['RM-316L-25','Stainless Bar 316L','m','$68.50','2026-01-01'],['BO-SEAL-001','Spring-Energised Seal','EA','$95.00','2026-03-15']].map((row, i) => (
+          <Row key={i} gap={3} style={{ marginBottom: 3 }}>
+            {row.map((cell, j) => <Box key={j} label={cell} w="17.6%" h={24} style={{ fontSize: 8, textTransform: 'none', color: C.muted }} />)}
+            <Row gap={3} style={{ width: '12%' }}>
+              <Box label="Edit" w="50%" h={24} style={{ fontSize: 8, color: C.accent }} />
+              <Box label="⊘" w="50%" h={24} style={{ fontSize: 8, color: C.danger }} />
+            </Row>
+          </Row>
+        ))}
+        <Box label="＋  Add material" h={26} style={{ color: C.success, borderColor: C.success, borderStyle: 'dashed', marginTop: 4, fontSize: 9 }} />
+      </Sec>
+      <Sec title="Labour & machine rates per work centre (admin only)">
+        <Row gap={8}>
+          {[['CNC Lathe Heavy Duty','$42/hr labour','$95/hr machine'],['5-Axis Milling Centre','$48/hr labour','$145/hr machine'],['Welding Station','$38/hr labour','$35/hr machine']].map(([n,l,m]) => (
+            <div key={n} style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: 8, backgroundColor: C.elevated }}>
+              <div style={{ fontSize: 9, color: C.text }}>{n}</div>
+              <div style={{ fontSize: 8, color: C.muted, marginTop: 3 }}>{l}</div>
+              <div style={{ fontSize: 8, color: C.muted }}>{m}</div>
+              <Box label="Edit rates" h={22} style={{ fontSize: 8, marginTop: 6, color: C.accent }} />
+            </div>
+          ))}
+        </Row>
+      </Sec>
+      <Sec title="FX rates (auto-refreshed daily via external rate feed)">
+        <Row gap={8}>
+          <Box label="1 USD = 3.64 QAR  ·  Last updated: today 06:00" w="100%" h={30} style={{ color: C.success, fontSize: 9, textTransform: 'none' }} />
+          <Box label="Manual override" w={110} h={30} style={{ flexShrink: 0, fontSize: 9 }} />
+        </Row>
+      </Sec>
+    </div>
+  ),
+
+  '4.12': () => (
+    <div style={{ height: '100%', display: 'flex', gap: 12 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Sec title="User management (admin only)">
+          {[['Ahmed K.','Estimator',C.accent],['Sara M.','Estimator',C.accent],['Talha M.','Approver',C.warning],['Client Contact','Client',C.muted]].map(([n,r,col]) => (
+            <Row key={n} gap={5} style={{ marginBottom: 4 }}>
+              <Box label={n} w="35%" h={26} style={{ fontSize: 9, textTransform: 'none', color: C.text }} />
+              <Box label={r} w="30%" h={26} style={{ fontSize: 9, color: col }} />
+              <Box label="Active" w="20%" h={26} style={{ fontSize: 8, color: C.success }} />
+              <Box label="Edit" w="15%" h={26} style={{ fontSize: 8, color: C.accent }} />
+            </Row>
+          ))}
+          <Box label="＋  Invite user" h={26} style={{ color: C.success, borderColor: C.success, borderStyle: 'dashed', marginTop: 4, fontSize: 9 }} />
+        </Sec>
+        <Sec title="Workspace settings">
+          <Box label="Default currency" h={28} style={{ marginBottom: 6 }} />
+          <Box label="Margin formula:  ●  On cost    ○  On price" h={28} style={{ marginBottom: 6 }} />
+          <Box label="Save settings" h={28} style={{ color: C.accent, borderColor: C.accent }} />
+        </Sec>
+      </div>
+      <div style={{ flex: 1 }}>
+        <Sec title="Data masking rules — fields never sent to AI provider (MCP gateway enforces this)">
+          <div style={{ border: `1px solid ${C.aiDim}`, borderRadius: 6, padding: 10, backgroundColor: '#140A22' }}>
+            <div style={{ fontSize: 9, color: C.ai, marginBottom: 8 }}>🛡️  Masked fields — AI cannot see these:</div>
+            {['Proprietary margin %','Customer name & PO reference','Labour contract rates','Internal cost breakdown'].map(field => (
+              <Row key={field} gap={6} style={{ marginBottom: 5 }}>
+                <Box label={`🚫  ${field}`} w="100%" h={24} style={{ fontSize: 8, color: C.danger, borderColor: `${C.danger}40`, textTransform: 'none', justifyContent: 'flex-start', paddingLeft: 8 }} />
+                <Box label="Remove" w={55} h={24} style={{ fontSize: 8, flexShrink: 0 }} />
+              </Row>
+            ))}
+            <Box label="＋  Add masked field" h={24} style={{ color: C.ai, borderColor: C.ai, borderStyle: 'dashed', marginTop: 4, fontSize: 8 }} />
+          </div>
+        </Sec>
+      </div>
+    </div>
+  ),
+};
+
+const notes = {
+  '4.1': [
+    {q:'How is login secured?', a:'Password → bcrypt hash on server. Never stored in plain text. JWT token issued on success, stored in an httpOnly cookie — JavaScript on the page cannot read it, protecting against XSS attacks. Token expires after 8 hours.'},
+    {q:'How does Google SSO work?', a:'OAuth 2.0 flow. User clicks Google → redirected to Google → Google verifies identity → returns a token → your backend validates it and issues your own JWT. The user never types a password into your app.'},
+    {q:'What if someone copy-pastes the URL into another browser?', a:'Every page load checks for a valid JWT in the cookie. No cookie = instant redirect to login. Another browser has no cookie, so access is completely blocked regardless of the URL.'},
+    {q:'What roles exist?', a:'Admin (full access, can edit master data and approve), Estimator (can create and edit estimates, cannot approve), Approver / SAP stakeholder (can approve or reject, read-only on estimates), Client (sees approved quotation only — no cost breakdown, no margin).'},
+  ],
+  '4.2': [
+    {q:'How does the dashboard know what to show each user?', a:'The JWT token carries the user\'s role and plant assignment. The API filters all queries by user ID and role. An Estimator only sees their own estimates. An Admin sees everything.'},
+    {q:'What is "pending approval" exactly?', a:'Any estimate with status="submitted" that the current user has Approver rights to review. The count badge updates in real time via a polling interval or WebSocket push.'},
+  ],
+  '4.3': [
+    {q:'Why did the Excel upload crash before?', a:'Two causes: (1) Express.js default body limit is ~100kb. Excel files exceed this. Fix: set express.json({ limit: "50mb" }) and multer with a 50MB file limit. (2) No file upload middleware. Without multer, the server cannot receive a file — only JSON text. The file arrives and nothing catches it.'},
+    {q:'How does the AI clean-up work without making dangerous changes?', a:'Validation (pure code, no AI) runs first and produces a structured error list. That list goes to Gemini: "These materials have no price. Suggest closest match from this known list." Gemini returns suggestions. Each suggestion is shown to the user with Accept / Dismiss buttons. Nothing is written to the database until the user explicitly accepts.'},
+    {q:'How does a 50MB file not crash the server?', a:'multer buffers the file in memory as a Node.js Buffer object. SheetJS (xlsx library) parses it synchronously. At 5 concurrent users, this is well within Node.js memory capacity. For files over 100MB a streaming parser would be needed — out of scope for V1.0.'},
+  ],
+  '4.4': [
+    {q:'How does live roll-up work technically?', a:'User edits a cell → 600ms debounce → frontend sends full modified BOM inputs to POST /api/calculate → pure stateless engine runs the full bottom-up calculation → returns updated CostTree JSON → AG Grid re-renders only the affected rows (virtual DOM diffing).'},
+    {q:'Why AG Grid specifically?', a:'AG Grid handles unlimited-depth tree data, inline cell editing, copy-paste from Excel, and 100,000+ rows without freezing. A plain HTML table or basic React table would corrupt or freeze with deep BOM structures. AG Grid is the industry standard for this type of data.'},
+    {q:'How is the tree stored in the database?', a:'Each bom_item row has a parent_id column referencing another bom_item. parent_id = null means it is the root (top-level product). The API loads all rows for a product and builds the tree in memory using a recursive function before returning it to the frontend.'},
+  ],
+  '4.5': [
+    {q:'What are the six cost buckets?', a:'Raw Material (bought raw materials × price), Bought-Out (externally sourced finished parts, used as-is), Labour (operation time × labour rate), Machine (operation time × machine rate), Subcontracting (work sent to outside vendors), Overhead (percentage applied on top of the above). Each bucket is tracked separately throughout the BOM tree.'},
+    {q:'How is "top cost driver" identified?', a:'The engine returns the cost contribution of every line item as a percentage of the total. The frontend sorts by this percentage descending and marks the top 2-3 with the star indicator. No AI involved — pure percentage comparison.'},
+  ],
+  '4.6': [
+    {q:'Is What-If powered by AI or pure maths?', a:'Pure maths. The user changes a value, the costing engine reruns with new inputs, returns updated CostTree. Deterministic — same change always produces same result. The AI is then optionally used to EXPLAIN the result in plain language, not to calculate it.'},
+    {q:'Can the AI suggest what to change?', a:'Yes — via should-cost estimation and anomaly detection. The AI might say: "your machine rate is 40% above the historical norm for this operation type." The user then decides whether to run a what-if with that value. AI proposes → engine calculates → human decides.'},
+    {q:'How do ripple effects work across the BOM tree?', a:'Because the engine walks the full BOM tree bottom-up on every recalculation, any change at any level ripples upward automatically. Change a sub-component → parent subtotal updates → grandparent updates → root total updates. This is the core value of the roll-up architecture.'},
+  ],
+  '4.7': [
+    {q:'What is the difference between the two margin formulas?', a:'"On cost": Price = Cost × (1 + 30%) = $1,628 × 1.3 = $2,116. "On price": Price = Cost ÷ (1 - 30%) = $1,628 ÷ 0.7 = $2,326. Same 30% input, $210 different result. The client must confirm which formula their finance team uses (Section 15 of the SOW). The engine implements whichever is configured in Settings.'},
+    {q:'How does the FX rate feed work?', a:'A background job (cron) runs every morning and calls a free FX API (e.g. exchangerate.host or Open Exchange Rates) to fetch the current USD/QAR rate. It stores this in the database. Every quote stamps which rate it used — so historical quotes never get recalculated with a different rate.'},
+    {q:'Why does the customer get a different report?', a:'Role-based access. The "Client" role can only access the customer-facing report endpoint, which returns description + quoted price only. The internal report with full cost breakdown and margin is accessible only to Estimator/Admin/Approver roles. The API enforces this — it is not just a UI toggle.'},
+  ],
+  '4.8': [
+    {q:'What does "immutable version" mean in the database?', a:'When you save a version, the full CostTree is serialized as JSON and written to a cost_versions row with a timestamp. This row is never UPDATE-d. Any change creates a new row. The versions table has no UPDATE or DELETE permissions — INSERT only. You can always reproduce exactly what a version said.'},
+    {q:'How does the comparison highlight differences?', a:'The API loads both CostTree JSON objects, walks them in parallel, and for each matching node calculates delta = new - old. Nodes where delta ≠ 0 are returned with a "changed" flag and the delta value. The frontend renders delta in amber (cost went up) or green (cost went down).'},
+  ],
+  '4.9': [
+    {q:'What stops someone from approving their own estimate?', a:'Role-based access control enforced at the API level. The JWT token carries the user\'s role. The /api/approve endpoint checks: if role !== "Admin" AND role !== "Approver", return 403 Forbidden. An Estimator who tries to approve gets rejected by the server regardless of what the UI shows.'},
+    {q:'What is actually stored in the audit trail?', a:'Every state change writes a row to approval_records: user_id (from JWT, server-verified), action (submitted/approved/rejected), timestamp (server time — not client time, which can be spoofed), comment, and a JSON snapshot of the cost_version before and after. INSERT only — no UPDATE or DELETE ever.'},
+  ],
+  '4.10': [
+    {q:'How does the AI know what the user is looking at?', a:'Every AI API call includes a context object built from the current screen state: the current BOM tree, cost totals, the selected row, any validation errors, the current module. This context is injected into the prompt so the AI response is specific to what\'s on screen — not a generic answer.'},
+    {q:'What is the "swappable provider" technically?', a:'A TypeScript interface: AiProvider { generate(prompt: string, context: object): Promise<string> }. GeminiProvider implements this. To switch to Claude or GPT-4 you write a new class implementing the same interface and change AI_PROVIDER= in the .env file. Zero other code changes.'},
+    {q:'What happens if Gemini goes down?', a:'Graceful degradation. The costing engine, editing, saving, approvals, and quotation all keep working — they have no dependency on AI. The AI panel shows "AI assistant temporarily unavailable." The user is never blocked from core work because the AI is unavailable.'},
+    {q:'What is the MCP server gateway?', a:'MCP (Model Context Protocol) is a standard for controlling what data an AI model can access. Instead of sending raw data to Gemini, the backend routes all AI calls through an MCP server that applies data masking rules first. Sensitive fields (margin, customer name) are stripped before anything leaves the building.'},
+  ],
+  '4.11': [
+    {q:'What does "date-stamped rating" mean?', a:'Every material price and rate has an effective_date. When you open a quote from 6 months ago, the engine uses the rates that were current on that specific date — not today\'s rates. This means historical quotes are always reproducible and auditable. The rate lookup is: "what was the CNC machine rate on June 14, 2026?"'},
+    {q:'Who can edit master data?', a:'Admin role only. The API middleware checks the JWT role on every /api/master-data route. An Estimator who attempts to change a labour rate gets a 403 Forbidden error. This cannot be bypassed from the UI — the enforcement is server-side.'},
+  ],
+  '4.12': [
+    {q:'How does data masking for AI actually work?', a:'Before any data is sent to Gemini, a masking middleware on the backend strips fields that are in the masked list. If "margin %" is masked, the AI never receives it — not even as context. It can still explain costs but cannot see or reveal margins. Enforced server-side via the MCP gateway, not a UI setting.'},
+    {q:'What is the margin formula setting here?', a:'This is the Section 15 dependency. The client must confirm whether they calculate margin on cost or on price before V1.0 is delivered. Once confirmed, it is set here in Settings and becomes the default for all quotations. Estimators cannot override it per-quote — it is a workspace-level governance rule.'},
+  ],
+};
+
+export default function App() {
+  const [active, setActive] = useState('4.1');
+  const [showNotes, setShowNotes] = useState(true);
+  const mod = modules.find(m => m.id === active);
+  const Screen = screens[active];
+  const techNotes = notes[active] || [];
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: C.bg, fontFamily: '"SF Mono", "Fira Code", "Courier New", monospace', color: C.text, fontSize: 11, overflow: 'hidden' }}>
+      
+      {/* Sidebar */}
+      <div style={{ width: 190, borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '12px 14px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10, color: C.accent, letterSpacing: 1, textTransform: 'uppercase' }}>Product Costing SaaS</div>
+          <div style={{ fontSize: 8, color: C.dim, marginTop: 2 }}>Wireframe prototype · V1.0</div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+          {modules.map(m => (
+            <button key={m.id} onClick={() => setActive(m.id)} style={{ width: '100%', textAlign: 'left', padding: '7px 14px', background: active === m.id ? C.accentDim : 'transparent', border: 'none', borderLeft: `2px solid ${active === m.id ? C.accent : 'transparent'}`, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <div style={{ fontSize: 10, color: active === m.id ? C.accent : C.text }}>{m.id} · {m.short}</div>
+              <div style={{ fontSize: 8, color: C.dim }}>{m.role}</div>
+            </button>
+          ))}
+        </div>
+        <div style={{ padding: '10px 14px', borderTop: `1px solid ${C.border}` }}>
+          <button onClick={() => setShowNotes(!showNotes)} style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 4, color: C.muted, fontSize: 8, cursor: 'pointer', padding: '4px 8px', width: '100%' }}>
+            {showNotes ? '▲ Hide tech notes' : '▼ Show tech notes'}
+          </button>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '9px 16px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <span style={{ fontSize: 10, color: C.accent }}>Module {mod.id}</span>
+          <span style={{ fontSize: 12, color: C.text, fontWeight: 'bold' }}>{mod.name}</span>
+          <span style={{ fontSize: 9, color: C.muted, backgroundColor: C.elevated, padding: '2px 8px', borderRadius: 10 }}>{mod.role}</span>
+          <div style={{ flex: 1 }} />
+          <span style={{ fontSize: 8, color: C.dim }}>LOW-FIDELITY WIREFRAME</span>
+        </div>
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <div style={{ flex: showNotes ? 2 : 1, padding: 14, overflowY: 'auto', borderRight: showNotes ? `1px solid ${C.border}` : 'none' }}>
+            {Screen && <Screen />}
+          </div>
+          {showNotes && (
+            <div style={{ flex: 1, padding: 14, overflowY: 'auto', backgroundColor: C.surface }}>
+              <div style={{ fontSize: 8, color: C.dim, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>Technical notes — how this actually works</div>
+              {techNotes.length === 0
+                ? <div style={{ fontSize: 9, color: C.dim }}>No technical notes for this module.</div>
+                : techNotes.map(({ q, a }, i) => (
+                  <div key={i} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 9, color: C.text, marginBottom: 5, lineHeight: 1.5 }}>❓ {q}</div>
+                    <div style={{ fontSize: 9, color: C.muted, lineHeight: 1.6 }}>{a}</div>
+                  </div>
+                ))
+              }
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

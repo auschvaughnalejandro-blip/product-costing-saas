@@ -44,7 +44,7 @@ services:
       MIGRATE_ON_START: 'true'
       # CHANGE THIS in any real deployment.
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-to-a-long-random-string}
-      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:8080}
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}

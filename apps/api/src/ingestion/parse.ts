@@ -54,6 +54,23 @@ function isBlank(value: unknown): boolean {
   return value === undefined || String(value).trim() === '';
 }
 
+/**
+ * Read a single cell as a plain primitive, handling MERGED CELLS explicitly.
+ *
+ * Excel stores a merged region's value only in its top-left (master) cell and
+ * leaves the other cells blank. So when a cell is blank but part of a merge, we
+ * resolve it to the master's value — that way a value sitting under a merged
+ * header or spanning a region is read consistently instead of coming back
+ * undefined for every cell but the first.
+ */
+function resolveCell(cell: ExcelJS.Cell): unknown {
+  const value = cellValue(cell.value);
+  if (isBlank(value) && cell.isMerged && cell.master && cell.master !== cell) {
+    return cellValue(cell.master.value);
+  }
+  return value;
+}
+
 function findSheet(wb: ExcelJS.Workbook, name: string): ExcelJS.Worksheet | undefined {
   return wb.worksheets.find((ws) => ws.name.trim().toLowerCase() === name.toLowerCase());
 }
@@ -66,7 +83,7 @@ function readSheet(wb: ExcelJS.Workbook, name: string, known: readonly string[])
   const colMap: { index: number; key: string }[] = [];
   const headers: string[] = [];
   for (let c = 1; c <= ws.columnCount; c += 1) {
-    const raw = cellValue(headerRow.getCell(c).value);
+    const raw = resolveCell(headerRow.getCell(c));
     if (isBlank(raw)) continue;
     const text = String(raw).trim();
     const canonical = known.find((k) => k.toLowerCase() === text.toLowerCase()) ?? text;
@@ -80,7 +97,7 @@ function readSheet(wb: ExcelJS.Workbook, name: string, known: readonly string[])
     const values: Record<string, unknown> = {};
     let hasAny = false;
     for (const { index, key } of colMap) {
-      const v = cellValue(row.getCell(index).value);
+      const v = resolveCell(row.getCell(index));
       if (!isBlank(v)) {
         values[key] = v;
         hasAny = true;
@@ -88,6 +105,8 @@ function readSheet(wb: ExcelJS.Workbook, name: string, known: readonly string[])
         values[key] = undefined;
       }
     }
+    // Strip completely empty rows up front: real spreadsheets carry trailing /
+    // interspersed blank rows that would otherwise trip validation downstream.
     if (hasAny) rows.push({ rowNumber: r, values });
   }
 
@@ -103,12 +122,12 @@ function readSettings(wb: ExcelJS.Workbook, name: string): RawSettings {
   const rowOf: Record<string, number> = {};
   for (let r = 1; r <= ws.rowCount; r += 1) {
     const row = ws.getRow(r);
-    const k = cellValue(row.getCell(1).value);
+    const k = resolveCell(row.getCell(1));
     if (isBlank(k)) continue;
     const keyText = String(k).trim();
     if (keyText.toLowerCase() === 'key') continue; // header row
     const canonical = knownKeys.find((sk) => sk.toLowerCase() === keyText.toLowerCase()) ?? keyText;
-    const v = cellValue(row.getCell(2).value);
+    const v = resolveCell(row.getCell(2));
     values[canonical] = isBlank(v) ? '' : String(v).trim();
     rowOf[canonical] = r;
   }
